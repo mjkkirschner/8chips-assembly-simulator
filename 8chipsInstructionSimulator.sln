@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "assembler", "assembler\asse
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{FFF2546C-B948-47D7-B8B4-F2CEA52FDF71}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "simulator", "simulator\simulator.csproj", "{9664B9E6-0BAC-4911-B692-65321944E075}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,5 +46,17 @@ Global
 		{FFF2546C-B948-47D7-B8B4-F2CEA52FDF71}.Release|x64.Build.0 = Release|Any CPU
 		{FFF2546C-B948-47D7-B8B4-F2CEA52FDF71}.Release|x86.ActiveCfg = Release|Any CPU
 		{FFF2546C-B948-47D7-B8B4-F2CEA52FDF71}.Release|x86.Build.0 = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|x64.Build.0 = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Debug|x86.Build.0 = Debug|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|x64.ActiveCfg = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|x64.Build.0 = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|x86.ActiveCfg = Release|Any CPU
+		{9664B9E6-0BAC-4911-B692-65321944E075}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
