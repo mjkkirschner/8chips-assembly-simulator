@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using ImGuiNET;
 using Veldrid;
 using Veldrid.StartupUtilities;
@@ -15,12 +18,102 @@ namespace simulatorUI
         private static Veldrid.CommandList commandList;
         private static Veldrid.ImGuiRenderer controller;
 
+        private static simulator.simulator simulatorInstance;
         private static IntPtr CPUframeBufferTextureId;
         static Dictionary<IntPtr, Texture> textureMap = new Dictionary<IntPtr, Texture>();
+
+        private static readonly object balanceLock = new object();
+
+        private static Task simulationThread;
+
+        static string testVGAOutputProgram =
+@"increment = 1
+width = 256
+height = 256
+(START)
+LOADAIMMEDIATE
+1100
+(ADD_1)
+ADD
+increment
+OUTA
+STOREA
+pixelindex
+LOADAATPOINTER
+pixelindex
+LOADBIMMEDIATE
+0
+UPDATEFLAGS
+JUMPIFEQUAL
+COLORWHITE
+
+(COLORBLACK)
+LOADAIMMEDIATE
+0
+STOREAATPOINTER
+pixelindex
+JUMP
+DONECHECK
+
+(COLORWHITE)
+LOADA
+pixelindex
+MODULO
+width
+STOREA
+x
+LOADA
+pixelindex
+DIVIDE
+width
+STOREA
+y
+LOADA
+x
+MULTIPLY
+x
+DIVIDE
+y
+STOREAATPOINTER
+pixelindex
+
+//a comment
+
+(DONECHECK)
+LOADA
+pixelindex
+LOADBIMMEDIATE
+65000
+UPDATEFLAGS
+JUMPIFLESS
+ADD_1
+JUMP
+START";
+
 
 
         static void Main(string[] args)
         {
+
+            var path = Path.GetTempFileName();
+            System.IO.File.WriteAllText(path, testVGAOutputProgram);
+            var assembler = new assembler.Assembler(path);
+            var assembledResult = assembler.ConvertToBinary();
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16).ToBinary());
+
+            simulatorInstance = new simulator.simulator(16, 256 * 256);
+
+            //TODO we probably need to insert this like it was being loaded by the boot loader...
+            simulatorInstance.mainMemory.InsertRange(255, binaryProgram.ToList());
+
+            //TODO use cancellation token here.
+            simulationThread = Task.Run(() =>
+              {
+                  simulatorInstance.ProgramCounter = 255.ToBinary();
+                  simulatorInstance.runSimulation();
+              });
+
+
             // Create window, GraphicsDevice, and all resources necessary for the demo.
             VeldridStartup.CreateWindowAndGraphicsDevice(
                 new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "ImGui.NET Sample Program"),
@@ -36,13 +129,15 @@ namespace simulatorUI
             commandList = gd.ResourceFactory.CreateCommandList();
             controller = new Veldrid.ImGuiRenderer(gd, gd.MainSwapchain.Framebuffer.OutputDescription, mainWindow.Width, mainWindow.Height);
 
-            var random = new Random();
-            float[] data = Enumerable.Range(0, 512 * 512).Select((i, index) => { return (float)random.NextDouble(); }).ToArray();
+            var data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
             //try creating an texture and binding it to an image which imgui will draw...
             //we'll need to modify this image every frame potentially...
-            var texture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(512, 512, 1, 1, PixelFormat.R32_Float, TextureUsage.Sampled));
+
+            //we need a conversion function here that converts from our format to a standard pixel format...
+
+            var texture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(256, 256, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
             CPUframeBufferTextureId = controller.GetOrCreateImGuiBinding(gd.ResourceFactory, texture);
-            gd.UpdateTexture(texture, data, 0, 0, 0, 512, 512, 1, 0, 0);
+            gd.UpdateTexture(texture, data, 0, 0, 0, 256, 256, 1, 0, 0);
             textureMap.Add(CPUframeBufferTextureId, texture);
 
             // Main application loop
@@ -69,6 +164,25 @@ namespace simulatorUI
             commandList.Dispose();
             gd.Dispose();
         }
+
+        private static int convertShortFormatToFullColor(BitArray memoryCell)
+        {
+            var color = new bool[]{true, true, true, true, true, true, true, true,
+              true, true, true, true, memoryCell[4], memoryCell[5], memoryCell[6], memoryCell[7],
+            true, true, true, true,memoryCell[8], memoryCell[9], memoryCell[10], memoryCell[11],
+             true, true, true, true, memoryCell[12], memoryCell[13], memoryCell[14], memoryCell[15]};
+            var remappedColor = new BitArray(color);
+
+            /* 
+          var remappedColor = new BitArray(new bool[] {
+          true, true, true, true, true, true, true, true,
+           true, true, true, true, true, true, true, true,
+          true, true, true, true, true, true, true, true,
+           true, true, true, true, true, true, true, true});
+            */
+            return remappedColor.ToNumeral();
+        }
+
         private static void SubmitUI()
         {
             // Demo code adapted from the official Dear ImGui demo program:
@@ -85,14 +199,16 @@ namespace simulatorUI
 
                 float framerate = ImGui.GetIO().Framerate;
                 ImGui.Text($"Application average {1000.0f / framerate:0.##} ms/frame ({framerate:0.#} FPS)");
-                var random = new Random();
 
-                float[] data = Enumerable.Range(0, 512 * 512).Select((i, index) => { return (float)random.NextDouble(); }).ToArray();
+
+                int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];
-                gd.UpdateTexture(texture as Texture, data, 0, 0, 0, 512, 512, 1, 0, 0);
+                gd.UpdateTexture(texture, data, 0, 0, 0, 256, 256, 1, 0, 0);
 
 
-                ImGui.Image(CPUframeBufferTextureId, new Vector2(1024));
+
+
+                ImGui.Image(CPUframeBufferTextureId, new Vector2(256));
             }
 
 

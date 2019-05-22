@@ -47,6 +47,7 @@ namespace simulator
         {
             while (!HALT)
             {
+                //Console.WriteLine(this.ProgramCounter.ToNumeral());
                 //fetch instruction from the program counter.
                 var currentInstructionIndex = ProgramCounter.ToNumeral();
                 var currentInstruction = mainMemory[currentInstructionIndex].ToNumeral();
@@ -218,8 +219,8 @@ namespace simulator
           {
               incrementCounter(simulator, 2);
               var pointer = simulator.mainMemory[operands[0].ToNumeral()];
-              var finalAddress = simulator.mainMemory[pointer.ToNumeral()];
-              simulator.mainMemory[finalAddress.ToNumeral()] = simulator.ARegister;
+              //var finalAddress = simulator.mainMemory[pointer.ToNumeral()];
+              simulator.mainMemory[pointer.ToNumeral()] = simulator.ARegister;
           }),
             [assembler.CommandType.LOADAATPOINTER] = new Action<simulator, List<BitArray>>((simulator, operands) =>
            {
