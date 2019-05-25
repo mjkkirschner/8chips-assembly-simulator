@@ -172,11 +172,11 @@ START";
             var color = new bool[]{
 
                 //lsb - RED
-              false, false, false, false, memoryCell[0], memoryCell[1], memoryCell[2], memoryCell[3],
+              false, false, false, false, memoryCell[8], memoryCell[9], memoryCell[10], memoryCell[11],
               //GREEN
             false, false, false, false,memoryCell[4], memoryCell[5], memoryCell[6], memoryCell[7],
             //BLUE
-             false, false, false, false, memoryCell[8], memoryCell[9], memoryCell[10], memoryCell[11],
+             false, false, false, false, memoryCell[0], memoryCell[1], memoryCell[2], memoryCell[3],
 
              //ALPHA
              true, true, true, true, true, true, true, true};
