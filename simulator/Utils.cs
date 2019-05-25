@@ -25,7 +25,7 @@ public static class BinaryConverter
         if (binary == null)
             throw new ArgumentNullException("binary");
         if (binary.Length > 16)
-            throw new ArgumentException("must be at most 32 bits long");
+            throw new ArgumentException("must be at most 16 bits long");
 
         var result = new short[1];
         binary.CopyTo(result, 0);
