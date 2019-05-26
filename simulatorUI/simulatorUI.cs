@@ -116,7 +116,7 @@ START";
 
             // Create window, GraphicsDevice, and all resources necessary for the demo.
             VeldridStartup.CreateWindowAndGraphicsDevice(
-                new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "ImGui.NET Sample Program"),
+                new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "8 chips simulator 2"),
                 new GraphicsDeviceOptions(true, null, true),
                 out mainWindow,
                 out gd);
@@ -130,19 +130,29 @@ START";
             controller = new Veldrid.ImGuiRenderer(gd, gd.MainSwapchain.Framebuffer.OutputDescription, mainWindow.Width, mainWindow.Height);
 
             var data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
+
             //try creating an texture and binding it to an image which imgui will draw...
             //we'll need to modify this image every frame potentially...
-
-            //we need a conversion function here that converts from our format to a standard pixel format...
 
             var texture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(256, 256, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
             CPUframeBufferTextureId = controller.GetOrCreateImGuiBinding(gd.ResourceFactory, texture);
             gd.UpdateTexture(texture, data, 0, 0, 0, 256, 256, 1, 0, 0);
             textureMap.Add(CPUframeBufferTextureId, texture);
 
+/* 
+            var state = new object();
+            var timer = new System.Threading.Timer((o) =>
+            {
+                int[] newdata = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
+                var currenttexture = textureMap[CPUframeBufferTextureId];
+                gd.UpdateTexture(currenttexture, newdata, 0, 0, 0, 256, 256, 1, 0, 0);
+            }, state, 1000, 150);
+
+*/
             // Main application loop
             while (mainWindow.Exists)
             {
+
                 InputSnapshot snapshot = mainWindow.PumpEvents();
                 if (!mainWindow.Exists) { break; }
                 controller.Update(1f / 60f, snapshot); // Feed the input events to our ImGui controller, which passes them through to ImGui.
@@ -194,16 +204,16 @@ START";
 
             // 1. Show a simple window.
             // Tip: if we don't call ImGui.BeginWindow()/ImGui.EndWindow() the widgets automatically appears in a window called "Debug".
+            ImGui.Begin("8Chips Simulator");
             {
                 ImGui.Text("Hello, world!");                                        // Display some text (you can use a format string too)
-
-                ImGui.Text($"Mouse position: {ImGui.GetMousePos()}");
 
                 ImGui.SameLine(0, -1);
 
                 float framerate = ImGui.GetIO().Framerate;
-                ImGui.Text($"Application average {1000.0f / framerate:0.##} ms/frame ({framerate:0.#} FPS)");
-
+                ImGui.NewLine();
+                ImGui.Text($"Total CPU Instruction Count {simulatorInstance.TotalInstructionCount}");
+                ImGui.Text($"Program Counter {simulatorInstance.ProgramCounter.ToNumeral()}");
 
                 int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];
@@ -211,8 +221,10 @@ START";
 
 
 
-
+                ImGui.Begin("FrameBuffer_Window");
+                ImGui.Text("FrameBuffer");
                 ImGui.Image(CPUframeBufferTextureId, new Vector2(256));
+                ImGui.End();
             }
 
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using assembler;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace simulator
 {
@@ -26,6 +27,7 @@ namespace simulator
         public BitArray CommsStatusRegister;
         public BitArray CommsDataRegister;
 
+        public long TotalInstructionCount = 0;
 
         internal bool HALT = false;
 
@@ -45,9 +47,20 @@ namespace simulator
         //starts the computer.
         public void runSimulation()
         {
+            var instructionCount = 0;
+            const int bundleSize = 10000;
+
+
+
             while (!HALT)
             {
-                //Console.WriteLine(this.ProgramCounter.ToNumeral());
+                instructionCount++;
+                this.TotalInstructionCount++;
+                if (instructionCount == bundleSize)
+                {
+                    instructionCount = 0;
+                    //System.Threading.Thread.Sleep(1);
+                }
                 //fetch instruction from the program counter.
                 var currentInstructionIndex = ProgramCounter.ToNumeral();
                 var currentInstruction = mainMemory[currentInstructionIndex].ToNumeral();
@@ -55,8 +68,9 @@ namespace simulator
                 //TODO - currently we only ever have one operand.
                 operands.Add(mainMemory[currentInstructionIndex + 1]);
                 var commandFunc = commandToInstructionHelper.map[(assembler.CommandType)currentInstruction];
+
                 //simulate.
-                commandFunc.DynamicInvoke(new object[] { this, operands });
+                ((Action<simulator, List<BitArray>>)commandFunc)(this, operands);
             }
 
         }
