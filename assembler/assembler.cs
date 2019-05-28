@@ -199,6 +199,12 @@ namespace assembler
             return outputLines;
         }
 
+        /// call this method to expand any macros (labels etc)
+        /// and return the input assembly code as an IEnumerable of strings
+        public IEnumerable<string> ExpandMacros(){
+           return this.ExpandMacros(this.assemblyFilePath);
+        }
+
     }
 
     class CodeConverter

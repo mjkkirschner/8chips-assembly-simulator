@@ -25,6 +25,13 @@ namespace simulatorUI
         private static readonly object balanceLock = new object();
 
         private static Task simulationThread;
+        private static uint width = 256;
+        private static uint height = 256;
+        private static int cpuSpeed = 100000;
+        private static bool halted = false;
+
+        private static string[] expandedCode;
+        private static int currentProgramLine;
 
         static string testVGAOutputProgram =
 @"increment = 1
@@ -95,13 +102,21 @@ START";
         static void Main(string[] args)
         {
 
+            //AppDomain.CurrentDomain.ProcessExit+= (s,e)=>{}
+
             var path = Path.GetTempFileName();
             System.IO.File.WriteAllText(path, testVGAOutputProgram);
             var assembler = new assembler.Assembler(path);
             var assembledResult = assembler.ConvertToBinary();
-            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16).ToBinary());
+            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            simulatorInstance = new simulator.simulator(16, 256 * 256);
+            //lets convert our final assembled program back to assembly instructions so we can view it.
+            //dissasembly)
+            var assembler2 = new assembler.Assembler(path);
+            expandedCode = assembler2.ExpandMacros().ToArray();
+
+
+            simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
 
             //TODO we probably need to insert this like it was being loaded by the boot loader...
             simulatorInstance.mainMemory.InsertRange(255, binaryProgram.ToList());
@@ -109,7 +124,7 @@ START";
             //TODO use cancellation token here.
             simulationThread = Task.Run(() =>
               {
-                  simulatorInstance.ProgramCounter = 255.ToBinary();
+                  simulatorInstance.ProgramCounter = 255;
                   simulatorInstance.runSimulation();
               });
 
@@ -129,26 +144,26 @@ START";
             commandList = gd.ResourceFactory.CreateCommandList();
             controller = new Veldrid.ImGuiRenderer(gd, gd.MainSwapchain.Framebuffer.OutputDescription, mainWindow.Width, mainWindow.Height);
 
-            var data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
+            var data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(Convert.ToInt32(x).ToBinary())).ToArray();
 
             //try creating an texture and binding it to an image which imgui will draw...
             //we'll need to modify this image every frame potentially...
 
-            var texture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(256, 256, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
+            var texture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(width, height, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
             CPUframeBufferTextureId = controller.GetOrCreateImGuiBinding(gd.ResourceFactory, texture);
-            gd.UpdateTexture(texture, data, 0, 0, 0, 256, 256, 1, 0, 0);
+            gd.UpdateTexture(texture, data, 0, 0, 0, width, height, 1, 0, 0);
             textureMap.Add(CPUframeBufferTextureId, texture);
 
-/* 
-            var state = new object();
-            var timer = new System.Threading.Timer((o) =>
-            {
-                int[] newdata = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
-                var currenttexture = textureMap[CPUframeBufferTextureId];
-                gd.UpdateTexture(currenttexture, newdata, 0, 0, 0, 256, 256, 1, 0, 0);
-            }, state, 1000, 150);
+            /* 
+                        var state = new object();
+                        var timer = new System.Threading.Timer((o) =>
+                        {
+                            int[] newdata = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
+                            var currenttexture = textureMap[CPUframeBufferTextureId];
+                            gd.UpdateTexture(currenttexture, newdata, 0, 0, 0, 256, 256, 1, 0, 0);
+                        }, state, 1000, 150);
 
-*/
+            */
             // Main application loop
             while (mainWindow.Exists)
             {
@@ -161,7 +176,7 @@ START";
 
                 commandList.Begin();
                 commandList.SetFramebuffer(gd.MainSwapchain.Framebuffer);
-                commandList.ClearColorTarget(0, new RgbaFloat(.7f, .7f, 1f, 1f));
+                commandList.ClearColorTarget(0, new RgbaFloat(.1f, .1f, .1f, .2f));
                 controller.Render(gd, commandList);
                 commandList.End();
                 gd.SubmitCommands(commandList);
@@ -206,6 +221,10 @@ START";
             // Tip: if we don't call ImGui.BeginWindow()/ImGui.EndWindow() the widgets automatically appears in a window called "Debug".
             ImGui.Begin("8Chips Simulator");
             {
+                ImGui.StyleColorsDark();
+                ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(.2f, 1f, .4f, 1f));
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(.5f, 1f, .7f, 1f));
+                ImGui.SetWindowFontScale(1.5f);
                 ImGui.Text("Hello, world!");                                        // Display some text (you can use a format string too)
 
                 ImGui.SameLine(0, -1);
@@ -213,17 +232,49 @@ START";
                 float framerate = ImGui.GetIO().Framerate;
                 ImGui.NewLine();
                 ImGui.Text($"Total CPU Instruction Count {simulatorInstance.TotalInstructionCount}");
-                ImGui.Text($"Program Counter {simulatorInstance.ProgramCounter.ToNumeral()}");
 
-                int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(x)).ToArray();
+
+                ImGui.Begin("Registers: ");
+                ImGui.SetWindowFontScale(1.5f);
+
+                simulatorInstance.Registers.ToList().ForEach(x =>
+                {
+                    ImGui.Text($"{x.Key} : {x.Value}");
+                });
+
+
+                ImGui.End();
+
+                if (ImGui.Checkbox("Halt CPU", ref halted))
+                {
+                    simulatorInstance.HALT = halted;
+                    if (!halted)
+                    {
+                        Task.Run(() =>
+                        {
+                            simulatorInstance.runSimulation();
+                        });
+                    }
+                }
+                if (ImGui.SliderInt("CPU speed", ref cpuSpeed, 1, 100000))
+                {
+                    simulatorInstance.instructionBundleSize = cpuSpeed;
+                }
+
+                ImGui.Begin("Assembly");
+                ImGui.Text("Expanded Assembly");
+                ImGui.ListBox("",ref currentProgramLine, expandedCode, expandedCode.Length, expandedCode.Length);
+                currentProgramLine = simulatorInstance.ProgramCounter - 255;
+
+                int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(Convert.ToInt32(x).ToBinary())).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];
-                gd.UpdateTexture(texture, data, 0, 0, 0, 256, 256, 1, 0, 0);
+                gd.UpdateTexture(texture, data, 0, 0, 0, width, height, 1, 0, 0);
 
 
 
                 ImGui.Begin("FrameBuffer_Window");
                 ImGui.Text("FrameBuffer");
-                ImGui.Image(CPUframeBufferTextureId, new Vector2(256));
+                ImGui.Image(CPUframeBufferTextureId, new Vector2(width * 2, height * 2));
                 ImGui.End();
             }
 
