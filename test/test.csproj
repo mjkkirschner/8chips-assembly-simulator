@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\assembler\assembler.csproj" />
     <ProjectReference Include="..\simulator\simulator.csproj" />
+    <ProjectReference Include="..\vmtranslator\vmtranslator.csproj" />
   </ItemGroup>
 
 </Project>

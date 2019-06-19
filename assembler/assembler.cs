@@ -201,8 +201,9 @@ namespace assembler
 
         /// call this method to expand any macros (labels etc)
         /// and return the input assembly code as an IEnumerable of strings
-        public IEnumerable<string> ExpandMacros(){
-           return this.ExpandMacros(this.assemblyFilePath);
+        public IEnumerable<string> ExpandMacros()
+        {
+            return this.ExpandMacros(this.assemblyFilePath);
         }
 
     }
@@ -299,8 +300,6 @@ namespace assembler
             }
 
             this.currentLineIndex = this.currentLineIndex + increment;
-            Console.WriteLine("debugging");
-            Console.WriteLine(this.currentLineIndex);
             if (this.currentLineIndex < this.allInputLines.Count())
             {
                 this.currentLine = this.allInputLines[this.currentLineIndex];
