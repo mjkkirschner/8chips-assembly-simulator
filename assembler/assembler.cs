@@ -42,6 +42,7 @@ namespace assembler
 
         ASSEM_LABEL = -1,
         ASSEM_STORE_MACRO = -2,
+        ASSEM_DEFINE = -3,
 
     }
     public class Assembler
@@ -109,26 +110,34 @@ namespace assembler
         private void AddLabelsToSymbolTable(IEnumerable<string> code)
         {
             Console.WriteLine("PHASE: FILL SYMBOL TABLE");
-            Console.WriteLine($"INPUT CODE:aaa{string.Join(Environment.NewLine, code)}aaa");
+            Console.WriteLine($"INPUT CODE:---{string.Join(Environment.NewLine, code)}---");
 
             var outputLineCounter = 0;
             var parser = new AssemblyParser(null, code);
             while (parser.HasMoreCommands() && parser.Advance())
             {
 
-                //if the current command is a label - don't increment our counter.
-                if (parser.CommandType() != CommandType.ASSEM_LABEL)
+                //for all non label, non define commands increment the counter
+                if (parser.CommandType() != CommandType.ASSEM_LABEL && parser.CommandType() != CommandType.ASSEM_DEFINE)
                 {
                     var increment = parser.commandTypeToNumberOfLines[parser.CommandType()];
                     outputLineCounter = outputLineCounter + increment;
 
                     //variables will be handled in the next pass.
                 }
+                //if the current command is a label - don't increment our counter.
                 //if we see a label, add a symbol for the address it points to.
-                else
+                else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
                     this.symbolTable[parser.LabelText()] = outputLineCounter + this.bootLoaderOffset;
                     Console.WriteLine($"adding symbol {parser.LabelText() } at line {  outputLineCounter + this.bootLoaderOffset}");
+                }
+                else if (parser.CommandType() == CommandType.ASSEM_DEFINE)
+                {
+                    var define = parser.Operands().FirstOrDefault();
+                    var address = parser.Operands().Skip(1).FirstOrDefault();
+                    this.symbolTable[define] = int.Parse(address);
+                    Console.WriteLine($"adding symbol {define } at line { address}");
                 }
             }
         }
@@ -142,9 +151,9 @@ namespace assembler
             while (parser.HasMoreCommands() && parser.Advance())
             {
 
-                //dont do anything for labels - we already made symbols for them
+                //dont do anything for labels or defines - we already made symbols for them
                 //in the first pass.
-                if (parser.CommandType() != CommandType.ASSEM_LABEL)
+                if (parser.CommandType() != CommandType.ASSEM_LABEL && parser.CommandType() != CommandType.ASSEM_DEFINE)
                 {
                     //first convert the opcode.
                     parser.output.Add(converter.InstructionAsHexString(parser.CommandType()));
@@ -155,11 +164,18 @@ namespace assembler
                         //get the symbol and lookup the memory address it points to - 
                         //store this as the next line in the output string array.
 
-                        //TODO for now there is only ever 1;
+                        // always assume a default offset of addding 0.
+                        int symbolOffset = 0;
                         var symbol = parser.Operands()[0];
+                        if (parser.SymbolHasOffset())
+                        {
+                            symbolOffset = parser.symbolOffsetExpressionInfo().Item2;
+                            symbol =  parser.symbolOffsetExpressionInfo().Item1;
+                        }
+
                         if (this.symbolTable.ContainsKey(symbol))
                         {
-                            parser.output.Add(converter.NumberAsHexString(this.symbolTable[symbol]));
+                            parser.output.Add(converter.NumberAsHexString(this.symbolTable[symbol] + symbolOffset));
                         }
 
                         //new symbol store it.
@@ -196,7 +212,17 @@ namespace assembler
             this.AddLabelsToSymbolTable(expandedCode);
             //phase 3: do the actual conversion from command strings and dec numbers operands to hex.
             var outputLines = this.ConvertOpCodes(expandedCode);
+            verifySymboltable();
             return outputLines;
+        }
+
+        private void verifySymboltable()
+        {
+            var matchingValues = this.symbolTable.Where(i => symbolTable.Any(t => t.Key != i.Key && t.Value == i.Value)).ToDictionary(i => i.Key, i => i.Value);
+            if (matchingValues.Keys.Any())
+            {
+                throw new Exception("symbol table had symbols that pointed to same memory address");
+            }
         }
 
         /// call this method to expand any macros (labels etc)
@@ -243,7 +269,7 @@ namespace assembler
             if (code == null)
             {
                 var data = File.ReadAllText(assemblyFilePath);
-                this.allInputLines = data.Split(Environment.NewLine).Where(line => line != string.Empty && !(line.StartsWith("//"))).ToArray();
+                this.allInputLines = data.Split(Environment.NewLine).Where(line => line != string.Empty && !(line.StartsWith("//"))).Select(x => x.Trim()).ToArray();
             }
             else
             {
@@ -277,8 +303,11 @@ namespace assembler
                 [assembler.CommandType.STORECOMSTATUS] = 2,
                 [assembler.CommandType.STORECOMDATA] = 2,
                 [assembler.CommandType.STOREAATPOINTER] = 2,
+
                 [assembler.CommandType.ASSEM_LABEL] = 1,
                 [assembler.CommandType.ASSEM_STORE_MACRO] = 1,
+                [assembler.CommandType.ASSEM_DEFINE] = 1,
+
                 [assembler.CommandType.LOADAATPOINTER] = 2,
                 [assembler.CommandType.MULTIPLY] = 2,
                 [assembler.CommandType.DIVIDE] = 2,
@@ -340,6 +369,11 @@ namespace assembler
             {
                 return assembler.CommandType.ASSEM_STORE_MACRO;
             }
+            else if (this.currentLine.ToLower().Contains("#define"))
+            {
+                return assembler.CommandType.ASSEM_DEFINE;
+            }
+
             throw new Exception($"could not parse current line to command: {this.currentLine},{this.currentLineIndex} ");
         }
         public bool HasSymbols()
@@ -353,6 +387,33 @@ namespace assembler
                 return true;
             }
             return false;
+        }
+
+        public bool SymbolHasOffset()
+        {
+            var symbolExpression = this.allInputLines[this.currentLineIndex + 1];
+            if ((symbolExpression.Contains("+")) || (symbolExpression.Contains("-")))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public Tuple<string, int> symbolOffsetExpressionInfo()
+        {
+            // symbol + 100
+            var symbolExpression = this.allInputLines[this.currentLineIndex + 1];
+            var ops = symbolExpression.Split(" ", StringSplitOptions.RemoveEmptyEntries).ToArray();
+
+            if (ops[1] == "+")
+            {
+                return Tuple.Create(ops[0], int.Parse(ops[2]));
+            }
+            else if (ops[0] == "-")
+            {
+                return Tuple.Create(ops[0], int.Parse(ops[2]) * -1);
+            }
+            throw new Exception("unkown offset type");
         }
 
         public bool HasOperands()
@@ -374,6 +435,11 @@ namespace assembler
             {
                 return this.currentLine.Split('=').Select(x => x.Trim()).ToArray();
             }
+            else if (this.CommandType() == assembler.CommandType.ASSEM_DEFINE)
+            {
+                return this.currentLine.Split(" ", StringSplitOptions.RemoveEmptyEntries).Skip(1).Select(x => x.Trim()).ToArray();
+            }
+
             throw new Exception(this.CommandType().ToString() + "does not have an operand");
         }
 
