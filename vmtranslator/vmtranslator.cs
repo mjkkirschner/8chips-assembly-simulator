@@ -55,12 +55,12 @@ namespace vmtranslator
         //setup our virtual registers and offset them using our bootloader offset...
         private void setupBaseRegisterSymbols()
         {
-            this.Output.Add($"{stackPointer_symbol} = {0 + bootloaderOffset}");
-            this.Output.Add($"{local_symbol} = {1 + bootloaderOffset}");
-            this.Output.Add($"{arg_symbol} = {2 + bootloaderOffset}");
-            this.Output.Add($"{this_symbol} = {3 + bootloaderOffset}");
-            this.Output.Add($"{that_symbol} = {4 + bootloaderOffset}");
-            this.Output.Add($"{temp_symbol} = {5 + bootloaderOffset}");
+            this.Output.Add($"#define {stackPointer_symbol}  {0 + bootloaderOffset}");
+            this.Output.Add($"#define {local_symbol}  {1 + bootloaderOffset}");
+            this.Output.Add($"#define {arg_symbol}  {2 + bootloaderOffset}");
+            this.Output.Add($"#define {this_symbol}  {3 + bootloaderOffset}");
+            this.Output.Add($"#define {that_symbol}  {4 + bootloaderOffset}");
+            this.Output.Add($"#define {temp_symbol}  {5 + bootloaderOffset}");
         }
 
         public vmIL2ASMWriter()
@@ -79,10 +79,10 @@ namespace vmtranslator
                 "1",
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
-                temp_symbol,
+                temp_symbol+1,
                 //subtract the value at that mem address from A
                 assembler.CommandType.SUBTRACT.ToString(),
-                temp_symbol,
+                temp_symbol+1,
                 //store result in original symbol
                 assembler.CommandType.STOREA.ToString(),
                 symbol
@@ -101,10 +101,10 @@ namespace vmtranslator
                 "1",
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
-                temp_symbol,
+                temp_symbol+1,
                 //subtract the value at that mem address from A
                 assembler.CommandType.ADD.ToString(),
-                temp_symbol,
+                temp_symbol+1,
                 //store result in original symbol
                 assembler.CommandType.STOREA.ToString(),
                 symbol
@@ -158,8 +158,16 @@ namespace vmtranslator
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
-                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+
+                //TODO
+                //THESE TWO COMMANDS BOTH USE A AND TEMP- SO WE NEED ANOTHER VARIABLE
+                //ID LIKE TO USE TEMP+1 SOMEHOW....
+                //COULD LOOK AT SIMPLE EXPRESSIONS IN THE ASSEMBLER?
+                //SYMBOL + 1 ?
+
                 this.Output.AddRange(generateMoveAtoTemp());
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
                 this.Output.Add(assembler.CommandType.ADD.ToString());
@@ -176,8 +184,9 @@ namespace vmtranslator
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
-                this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.AddRange(generateMoveAtoTemp());
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
                 this.Output.Add(assembler.CommandType.SUBTRACT.ToString());

@@ -34,11 +34,11 @@ namespace Tests
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
             var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255, binaryProgram.ToList());
+            simulatorInstance.mainMemory.InsertRange(255+16, binaryProgram.ToList());
 
-            simulatorInstance.ProgramCounter = 255;
+            simulatorInstance.ProgramCounter = 255+16;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[256], 15);
+            Assert.AreEqual(simulatorInstance.mainMemory[0], 15);
 
         }
     }
