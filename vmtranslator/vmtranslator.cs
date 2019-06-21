@@ -79,10 +79,10 @@ namespace vmtranslator
                 "1",
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
-                temp_symbol+1,
+                temp_symbol+ " + 1",
                 //subtract the value at that mem address from A
                 assembler.CommandType.SUBTRACT.ToString(),
-                temp_symbol+1,
+                temp_symbol+ " + 1",
                 //store result in original symbol
                 assembler.CommandType.STOREA.ToString(),
                 symbol
@@ -101,10 +101,10 @@ namespace vmtranslator
                 "1",
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
-                temp_symbol+1,
+                temp_symbol+" + 1",
                 //subtract the value at that mem address from A
                 assembler.CommandType.ADD.ToString(),
-                temp_symbol+1,
+                temp_symbol+" + 1",
                 //store result in original symbol
                 assembler.CommandType.STOREA.ToString(),
                 symbol
