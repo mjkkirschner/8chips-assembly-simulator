@@ -8,6 +8,8 @@ using System.Linq;
 namespace assembler
 {
 
+
+
     public enum OutputFormat
     {
         hex,
@@ -48,12 +50,32 @@ namespace assembler
     public class Assembler
     {
 
-
-        private int bootLoaderOffset = 255;
-        private int symbolTableOffset = 500;
-
         private string assemblyFilePath;
         public Dictionary<string, int> symbolTable = new Dictionary<string, int>();
+
+        public static Dictionary<string, Tuple<int, int>> MemoryMap = new Dictionary<string, Tuple<int, int>>{
+            {"bootloader",Tuple.Create(0,255)},
+             {"pointers_registers",Tuple.Create(256,271)},
+              {"symbols",Tuple.Create(272,527)},
+                {"user_code",Tuple.Create(528,33039)},
+                 {"stack",Tuple.Create(33040,34839)},
+                   {"heap",Tuple.Create(34840,48839)},
+                    {"frame_buffer",Tuple.Create(48840,65223)},
+
+        };
+        private int currentSymbolTableOffset = 0;
+
+        public enum MemoryMapKeys
+        {
+            bootloader,
+            pointers_registers,
+            symbols,
+            user_code,
+            stack,
+            heap,
+            frame_buffer,
+        }
+
 
         public Assembler(string filePath)
         {
@@ -129,8 +151,9 @@ namespace assembler
                 //if we see a label, add a symbol for the address it points to.
                 else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
-                    this.symbolTable[parser.LabelText()] = outputLineCounter + this.bootLoaderOffset;
-                    Console.WriteLine($"adding symbol {parser.LabelText() } at line {  outputLineCounter + this.bootLoaderOffset}");
+                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code.ToString()].Item1;
+                    this.symbolTable[parser.LabelText()] = memoryAddressInUserCodeSpace;
+                    Console.WriteLine($"adding symbol {parser.LabelText() } at line { memoryAddressInUserCodeSpace }");
                 }
                 else if (parser.CommandType() == CommandType.ASSEM_DEFINE)
                 {
@@ -170,7 +193,7 @@ namespace assembler
                         if (parser.SymbolHasOffset())
                         {
                             symbolOffset = parser.symbolOffsetExpressionInfo().Item2;
-                            symbol =  parser.symbolOffsetExpressionInfo().Item1;
+                            symbol = parser.symbolOffsetExpressionInfo().Item1;
                         }
 
                         if (this.symbolTable.ContainsKey(symbol))
@@ -185,9 +208,11 @@ namespace assembler
                         //transfer time will just increase.
                         else
                         {
-                            Console.WriteLine($"adding symbol, {symbol} at line: {this.bootLoaderOffset + this.symbolTableOffset}");
-                            this.symbolTable[symbol] = this.bootLoaderOffset + this.symbolTableOffset;
-                            this.symbolTableOffset = this.symbolTableOffset + 1;
+                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols.ToString()].Item1 + this.currentSymbolTableOffset;
+                            Console.WriteLine($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
+                            this.symbolTable[symbol] = symbolTableCurrentLocation;
+                            //increment the offset.
+                            this.currentSymbolTableOffset = this.currentSymbolTableOffset + 1;
                             parser.output.Add(converter.NumberAsHexString(this.symbolTable[symbol]));
                         }
                     }

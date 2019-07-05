@@ -198,6 +198,44 @@ namespace vmtranslator
                 this.Output.AddRange(generateIncrement(stackPointer_symbol));
             }
 
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.eq)
+            {
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //load temp into B somehow
+                this.Output.Add(assembler.CommandType.LOADB.ToString());
+                this.Output.Add(temp_symbol);
+
+                // update flags
+                this.Output.Add(assembler.CommandType.UPDATEFLAGS.ToString());
+                // we need to return different results to the stack depending on
+                // if equal is true or not - can do this using jumps.
+                this.Output.Add(assembler.CommandType.JUMPIFEQUAL.ToString());
+                this.Output.Add("EQ_TRUE");
+
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("0");
+                this.Output.Add(assembler.CommandType.JUMP.ToString());
+                this.Output.Add("EQ_STORE_STACK");
+
+                this.Output.Add("(EQ_TRUE)");
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("1");
+
+                this.Output.Add("(EQ_STORE_STACK)");
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
         }
 
         private void handlePushPop(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
@@ -280,6 +318,7 @@ namespace vmtranslator
         {
             add,
             sub,
+            //TODO can't implement this until resolving unsigned vs signed internal number storage.
             neg,
             eq,
             gt,
