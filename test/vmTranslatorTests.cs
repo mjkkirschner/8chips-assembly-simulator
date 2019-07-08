@@ -55,19 +55,19 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = 255 + 16;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[0], 15);
+            //TODO make this lookup the current SP location.
+            Assert.AreEqual(simulatorInstance.mainMemory[33040], 15);
 
         }
 
@@ -86,17 +86,16 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = 255 + 16;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
             Assert.AreEqual(simulatorInstance.mainMemory[0], -1);
 
@@ -113,19 +112,20 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = 255 + 16;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[0], 10);
+
+            //TODO make this lookup the current SP location.
+            Assert.AreEqual(simulatorInstance.mainMemory[33040], 10);
 
         }
 
@@ -141,19 +141,19 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = 255 + 16;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[0], 110);
+            //TODO make this lookup the current SP location.
+            Assert.AreEqual(simulatorInstance.mainMemory[33040], 110);
 
         }
 
@@ -169,19 +169,19 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = 255 + 16;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[0], 0);
+            //TODO make this lookup the current SP location.
+            Assert.AreEqual(simulatorInstance.mainMemory[33040], 0);
 
         }
 
@@ -197,19 +197,19 @@ namespace Tests
             assembly.ToList().ForEach(x => Console.WriteLine(x));
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[15]);
+            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
-            var simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.mainMemory.InsertRange(255 + 16, binaryProgram.ToList());
-
-            simulatorInstance.ProgramCounter = (ushort) MemoryMap[MemoryMapKeys.user_code.ToString()].Item1;
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[0], 1);
+            //TODO make this lookup the current SP location.
+            Assert.AreEqual(simulatorInstance.mainMemory[33040], 1);
 
         }
     }

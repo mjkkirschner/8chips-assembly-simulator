@@ -53,14 +53,14 @@ namespace assembler
         private string assemblyFilePath;
         public Dictionary<string, int> symbolTable = new Dictionary<string, int>();
 
-        public static Dictionary<string, Tuple<int, int>> MemoryMap = new Dictionary<string, Tuple<int, int>>{
-            {"bootloader",Tuple.Create(0,255)},
-             {"pointers_registers",Tuple.Create(256,271)},
-              {"symbols",Tuple.Create(272,527)},
-                {"user_code",Tuple.Create(528,33039)},
-                 {"stack",Tuple.Create(33040,34839)},
-                   {"heap",Tuple.Create(34840,48839)},
-                    {"frame_buffer",Tuple.Create(48840,65223)},
+        public static Dictionary<MemoryMapKeys, Tuple<int, int>> MemoryMap = new Dictionary<MemoryMapKeys, Tuple<int, int>>{
+            {MemoryMapKeys.bootloader,Tuple.Create(0,255)},
+             {MemoryMapKeys.pointers_registers,Tuple.Create(256,271)},
+              {MemoryMapKeys.symbols,Tuple.Create(272,527)},
+                {MemoryMapKeys.user_code,Tuple.Create(528,33039)},
+                 {MemoryMapKeys.stack,Tuple.Create(33040,34839)},
+                   {MemoryMapKeys.heap,Tuple.Create(34840,48839)},
+                    {MemoryMapKeys.frame_buffer,Tuple.Create(48840,65223)},
 
         };
         private int currentSymbolTableOffset = 0;
@@ -151,7 +151,7 @@ namespace assembler
                 //if we see a label, add a symbol for the address it points to.
                 else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
-                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code.ToString()].Item1;
+                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].Item1;
                     this.symbolTable[parser.LabelText()] = memoryAddressInUserCodeSpace;
                     Console.WriteLine($"adding symbol {parser.LabelText() } at line { memoryAddressInUserCodeSpace }");
                 }
@@ -208,7 +208,7 @@ namespace assembler
                         //transfer time will just increase.
                         else
                         {
-                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols.ToString()].Item1 + this.currentSymbolTableOffset;
+                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].Item1 + this.currentSymbolTableOffset;
                             Console.WriteLine($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
                             this.symbolTable[symbol] = symbolTableCurrentLocation;
                             //increment the offset.

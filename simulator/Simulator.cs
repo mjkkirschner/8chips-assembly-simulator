@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using assembler;
 using System.Linq;
 using System.Linq.Expressions;
+using static assembler.Assembler;
 
 namespace simulator
 {
 
-    public class simulator
+    public class eightChipsSimulator
     {
 
         public readonly int wordWidth = 16;
@@ -31,9 +32,27 @@ namespace simulator
         public Dictionary<string, ushort> Registers = new Dictionary<string, ushort>();
         public int instructionBundleSize { get; set; } = 100000;
 
+        /// <summary>
+        /// sets the simulator memory to the specified user code at the correct offset.
+        /// </summary>
+        /// <param name="binaryUserCode"></param>
+        /// <returns></returns>
+        public Tuple<int, int> setUserCode(ushort[] binaryUserCode)
+        {
+            // start at the user code offset in the memory
+            // and loop until we're out of values.\
+            var userCodeStartOffset = MemoryMap[MemoryMapKeys.user_code].Item1;
+            var j = userCodeStartOffset;
+            for (var i = 0; i < binaryUserCode.Length; i++)
+            {
+                this.mainMemory[j] = binaryUserCode[i];
+                j = j + 1;
+            }
+            //TODO check if we go out of range.
+            return Tuple.Create(userCodeStartOffset, j);
+        }
 
-
-        public simulator(int wordWidth, int memoryLength)
+        public eightChipsSimulator(int wordWidth, int memoryLength)
         {
             this.wordWidth = wordWidth;
             this.mainMemory = Enumerable.Range(0, memoryLength).Select(x => (ushort)0).ToList();
@@ -68,14 +87,14 @@ namespace simulator
                 var commandFunc = commandToInstructionHelper.map[(assembler.CommandType)currentInstruction];
 
                 //simulate.
-                ((Action<simulator, List<ushort>>)commandFunc)(this, operands);
+                ((Action<eightChipsSimulator, List<ushort>>)commandFunc)(this, operands);
             }
 
         }
     }
     static class commandToInstructionHelper
     {
-        public static void incrementCounter(simulator simulator, ushort num)
+        public static void incrementCounter(eightChipsSimulator simulator, ushort num)
         {
             ushort incrementCounter = (ushort)(simulator.ProgramCounter + num);
             simulator.ProgramCounter = incrementCounter;
@@ -83,28 +102,28 @@ namespace simulator
 
         public static Dictionary<CommandType, Delegate> map = new Dictionary<CommandType, Delegate>()
         {
-            [assembler.CommandType.NOP] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.NOP] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
               {
                   incrementCounter(simulator, 1);
               }),
 
 
-            [assembler.CommandType.LOADA] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADA] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
             { // when we get a load A command,
               // we go lookup the value at memory location operand[0] - then
               // store this in A register.
-            var operandAsInt = operands[0];
+                var operandAsInt = operands[0];
                 simulator.ARegister = simulator.mainMemory[operandAsInt];
 
                 incrementCounter(simulator, 2);
 
             }),
-            [assembler.CommandType.OUTA] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.OUTA] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                simulator.OutRegister = simulator.ARegister;
                incrementCounter(simulator, 1);
            }),
-            [assembler.CommandType.ADD] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.ADD] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                var operandAsInt = operands[0];
                var dataToAdd = simulator.mainMemory[operandAsInt];
@@ -116,7 +135,7 @@ namespace simulator
 
                incrementCounter(simulator, 2);
            }),
-            [assembler.CommandType.SUBTRACT] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.SUBTRACT] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                var operandAsInt = operands[0];
                var dataToAdd = simulator.mainMemory[operandAsInt];
@@ -128,23 +147,23 @@ namespace simulator
 
                incrementCounter(simulator, 2);
            }),
-            [assembler.CommandType.STOREA] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.STOREA] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                var operandAsInt = operands[0];
                simulator.mainMemory[operandAsInt] = simulator.ARegister;
 
                incrementCounter(simulator, 2);
            }),
-            [assembler.CommandType.LOADAIMMEDIATE] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADAIMMEDIATE] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                simulator.ARegister = operands[0];
                incrementCounter(simulator, 2);
            }),
-            [assembler.CommandType.JUMP] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.JUMP] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
             {
                 simulator.ProgramCounter = operands[0];
             }),
-            [assembler.CommandType.JUMPIFEQUAL] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.JUMPIFEQUAL] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                if (simulator.ARegister == simulator.BRegister)
@@ -152,7 +171,7 @@ namespace simulator
                    simulator.ProgramCounter = operands[0];
                }
            }),
-            [assembler.CommandType.JUMPIFLESS] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.JUMPIFLESS] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                if (simulator.ARegister < simulator.BRegister)
@@ -160,7 +179,7 @@ namespace simulator
                    simulator.ProgramCounter = operands[0];
                }
            }),
-            [assembler.CommandType.JUMPIFGREATER] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.JUMPIFGREATER] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                if (simulator.ARegister > simulator.BRegister)
@@ -168,7 +187,7 @@ namespace simulator
                    simulator.ProgramCounter = operands[0];
                }
            }),
-            [assembler.CommandType.LOADB] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADB] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
             {
                 var operandAsInt = operands[0];
                 simulator.BRegister = simulator.mainMemory[operandAsInt];
@@ -176,19 +195,19 @@ namespace simulator
                 incrementCounter(simulator, 2);
 
             }),
-            [assembler.CommandType.LOADBIMMEDIATE] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADBIMMEDIATE] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
           {
               simulator.BRegister = operands[0];
               incrementCounter(simulator, 2);
           }),
-            [assembler.CommandType.STOREB] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.STOREB] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
              {
                  var operandAsInt = operands[0];
                  simulator.mainMemory[operandAsInt] = simulator.BRegister;
 
                  incrementCounter(simulator, 2);
              }),
-            [assembler.CommandType.UPDATEFLAGS] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.UPDATEFLAGS] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
         {
             incrementCounter(simulator, 1);
             var a = simulator.ARegister;
@@ -207,33 +226,33 @@ namespace simulator
                 simulator.FlagsRegister = (ushort)(simulator.FlagsRegister + 4);
             }
         }),
-            [assembler.CommandType.HALT] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.HALT] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
         {
             simulator.HALT = true;
         }),
-            [assembler.CommandType.LOADCONTROLIMMEDIATE] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADCONTROLIMMEDIATE] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                simulator.CommsControlRegister = operands[0];
            }),
-            [assembler.CommandType.STORECOMSTATUS] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.STORECOMSTATUS] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                simulator.mainMemory[operands[0]] = simulator.CommsStatusRegister;
            }),
-            [assembler.CommandType.STORECOMDATA] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.STORECOMDATA] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
           {
               incrementCounter(simulator, 2);
               simulator.mainMemory[operands[0]] = simulator.CommsDataRegister;
           }),
-            [assembler.CommandType.STOREAATPOINTER] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.STOREAATPOINTER] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
           {
               incrementCounter(simulator, 2);
               var pointer = simulator.mainMemory[operands[0]];
-          //var finalAddress = simulator.mainMemory[pointer.ToNumeral()];
-          simulator.mainMemory[pointer] = simulator.ARegister;
+              //var finalAddress = simulator.mainMemory[pointer.ToNumeral()];
+              simulator.mainMemory[pointer] = simulator.ARegister;
           }),
-            [assembler.CommandType.LOADAATPOINTER] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.LOADAATPOINTER] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);
                var pointer = simulator.mainMemory[operands[0]];
@@ -241,7 +260,7 @@ namespace simulator
                simulator.ARegister = finalData;
            }),
 
-            [assembler.CommandType.MULTIPLY] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.MULTIPLY] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
            {
                var operandAsInt = operands[0];
                var dataToAdd = simulator.mainMemory[operandAsInt];
@@ -253,7 +272,7 @@ namespace simulator
 
                incrementCounter(simulator, 2);
            }),
-            [assembler.CommandType.DIVIDE] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.DIVIDE] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
             {
                 var operandAsInt = operands[0];
                 var dataToAdd = simulator.mainMemory[operandAsInt];
@@ -265,7 +284,7 @@ namespace simulator
 
                 incrementCounter(simulator, 2);
             }),
-            [assembler.CommandType.MODULO] = new Action<simulator, List<ushort>>((simulator, operands) =>
+            [assembler.CommandType.MODULO] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
                {
                    var operandAsInt = operands[0];
                    var dataToAdd = simulator.mainMemory[operandAsInt];

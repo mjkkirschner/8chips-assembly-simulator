@@ -17,7 +17,7 @@ namespace Tests
         [Test]
         public void canHalt()
         {
-            var simulator = new simulator.simulator(16, 1000);
+            var simulator = new simulator.eightChipsSimulator(16, 1000);
             simulator.mainMemory[0] = 15;
             simulator.mainMemory[1] = 6;
             simulator.mainMemory[2] = 20;
@@ -30,7 +30,7 @@ namespace Tests
         [Test]
         public void canAdd()
         {
-            var simulator = new simulator.simulator(16, 1000);
+            var simulator = new simulator.eightChipsSimulator(16, 1000);
             simulator.mainMemory[0] = 6;
             simulator.mainMemory[1] = 20;
             simulator.mainMemory[2] = 3;
@@ -53,7 +53,7 @@ namespace Tests
         [Test]
         public void canJump()
         {
-            var simulator = new simulator.simulator(16, 1000);
+            var simulator = new simulator.eightChipsSimulator(16, 1000);
             simulator.mainMemory[0] = 6;
             simulator.mainMemory[1] = 20;
             simulator.mainMemory[2] = 14;
@@ -73,7 +73,7 @@ namespace Tests
         [Test]
         public void canJumpConditionally()
         {
-            var simulator = new simulator.simulator(16, 1000);
+            var simulator = new simulator.eightChipsSimulator(16, 1000);
             simulator.mainMemory[0] = 6;
             simulator.mainMemory[1] = 20;
             simulator.mainMemory[2] = 3;

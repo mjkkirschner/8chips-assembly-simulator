@@ -47,6 +47,7 @@ namespace vmtranslator
         private const string this_symbol = "THIS";
         private const string that_symbol = "THAT";
         private const string temp_symbol = "TEMP";
+        //TODO get rid of this, replace using assembler memory map.
         private int bootloaderOffset = 256;
 
 
@@ -61,6 +62,13 @@ namespace vmtranslator
             this.Output.Add($"#define {this_symbol}  {3 + bootloaderOffset}");
             this.Output.Add($"#define {that_symbol}  {4 + bootloaderOffset}");
             this.Output.Add($"#define {temp_symbol}  {5 + bootloaderOffset}");
+
+
+            //set the pointers to the right values
+            //SP = 33040
+            this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
+            //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
+            
         }
 
         public vmIL2ASMWriter()

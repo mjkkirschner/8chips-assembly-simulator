@@ -18,7 +18,7 @@ namespace simulatorUI
         private static Veldrid.CommandList commandList;
         private static Veldrid.ImGuiRenderer controller;
 
-        private static simulator.simulator simulatorInstance;
+        private static simulator.eightChipsSimulator simulatorInstance;
         private static IntPtr CPUframeBufferTextureId;
         static Dictionary<IntPtr, Texture> textureMap = new Dictionary<IntPtr, Texture>();
 
@@ -46,45 +46,12 @@ increment
 OUTA
 STOREA
 pixelindex
-LOADAATPOINTER
-pixelindex
-LOADBIMMEDIATE
-0
-UPDATEFLAGS
-JUMPIFEQUAL
-COLORWHITE
-
-(COLORBLACK)
-LOADAIMMEDIATE
-0
-STOREAATPOINTER
-pixelindex
-JUMP
-DONECHECK
 
 (COLORWHITE)
 LOADA
 pixelindex
-MODULO
-width
-STOREA
-x
-LOADA
-pixelindex
-DIVIDE
-width
-STOREA
-y
-LOADA
-x
-MULTIPLY
-x
-DIVIDE
-y
 STOREAATPOINTER
 pixelindex
-
-//a comment
 
 (DONECHECK)
 LOADA
@@ -106,8 +73,8 @@ START";
 
             var path = Path.GetTempFileName();
             System.IO.File.WriteAllText(path, testVGAOutputProgram);
-            var assembler = new assembler.Assembler(path);
-            var assembledResult = assembler.ConvertToBinary();
+            var assemblerInst = new assembler.Assembler(path);
+            var assembledResult = assemblerInst.ConvertToBinary();
             var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
 
             //lets convert our final assembled program back to assembly instructions so we can view it.
@@ -116,15 +83,13 @@ START";
             expandedCode = assembler2.ExpandMacros().ToArray();
 
 
-            simulatorInstance = new simulator.simulator(16, (int)Math.Pow(2, 16));
-
-            //TODO we probably need to insert this like it was being loaded by the boot loader...
-            simulatorInstance.mainMemory.InsertRange(255, binaryProgram.ToList());
+            simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
 
             //TODO use cancellation token here.
             simulationThread = Task.Run(() =>
               {
-                  simulatorInstance.ProgramCounter = 255;
+                  simulatorInstance.ProgramCounter = (ushort)assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1;
                   simulatorInstance.runSimulation();
               });
 
@@ -263,8 +228,9 @@ START";
 
                 ImGui.Begin("Assembly");
                 ImGui.Text("Expanded Assembly");
-                ImGui.ListBox("",ref currentProgramLine, expandedCode, expandedCode.Length, expandedCode.Length);
-                currentProgramLine = simulatorInstance.ProgramCounter - 255;
+                ImGui.ListBox("", ref currentProgramLine, expandedCode, expandedCode.Length, expandedCode.Length);
+                //TODO I think this is going to be offset incorrectly based on how many labels were removed during expansion...
+                currentProgramLine = simulatorInstance.ProgramCounter -assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1 ;
 
                 int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(Convert.ToInt32(x).ToBinary())).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];
