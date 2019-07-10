@@ -68,7 +68,7 @@ namespace vmtranslator
             //SP = 33040
             this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
             //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
-            
+
         }
 
         public vmIL2ASMWriter()
@@ -166,13 +166,6 @@ namespace vmtranslator
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
-
-                //TODO
-                //THESE TWO COMMANDS BOTH USE A AND TEMP- SO WE NEED ANOTHER VARIABLE
-                //ID LIKE TO USE TEMP+1 SOMEHOW....
-                //COULD LOOK AT SIMPLE EXPRESSIONS IN THE ASSEMBLER?
-                //SYMBOL + 1 ?
-
                 this.Output.AddRange(generateMoveAtoTemp());
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
 
@@ -208,6 +201,8 @@ namespace vmtranslator
 
             else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.eq)
             {
+                var blockID = Guid.NewGuid().ToString("N");
+
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
@@ -225,18 +220,58 @@ namespace vmtranslator
                 // we need to return different results to the stack depending on
                 // if equal is true or not - can do this using jumps.
                 this.Output.Add(assembler.CommandType.JUMPIFEQUAL.ToString());
-                this.Output.Add("EQ_TRUE");
+                this.Output.Add($"EQ_TRUE_{blockID}");
 
                 this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
                 this.Output.Add("0");
                 this.Output.Add(assembler.CommandType.JUMP.ToString());
-                this.Output.Add("EQ_STORE_STACK");
+                this.Output.Add($"EQ_STORE_STACK_{blockID}");
 
-                this.Output.Add("(EQ_TRUE)");
+                this.Output.Add($"(EQ_TRUE_{blockID})");
                 this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
                 this.Output.Add("1");
 
-                this.Output.Add("(EQ_STORE_STACK)");
+                this.Output.Add($"(EQ_STORE_STACK_{blockID})");
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.gt)
+            {
+                var blockID = Guid.NewGuid().ToString("N");
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //load temp into B somehow
+                this.Output.Add(assembler.CommandType.LOADB.ToString());
+                this.Output.Add(temp_symbol);
+
+                // update flags
+                this.Output.Add(assembler.CommandType.UPDATEFLAGS.ToString());
+                // we need to return different results to the stack depending on
+                // if A>B or not - can do this using jumps.
+                this.Output.Add(assembler.CommandType.JUMPIFGREATER.ToString());
+                this.Output.Add($"GT_TRUE_{blockID}");
+
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("0");
+                this.Output.Add(assembler.CommandType.JUMP.ToString());
+                this.Output.Add($"GT_STORE_STACK_{blockID}");
+
+                this.Output.Add($"(GT_TRUE_{blockID})");
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("1");
+
+                this.Output.Add($"(GT_STORE_STACK_{blockID})");
                 //now store the result in SP
                 this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);

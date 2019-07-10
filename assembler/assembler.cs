@@ -152,6 +152,12 @@ namespace assembler
                 else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
                     var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].Item1;
+
+                    if (this.symbolTable.ContainsKey(parser.LabelText()))
+                    {
+                        throw new Exception($"Symboltable already contained this label {parser.LabelText()} at line {memoryAddressInUserCodeSpace}");
+                    }
+
                     this.symbolTable[parser.LabelText()] = memoryAddressInUserCodeSpace;
                     Console.WriteLine($"adding symbol {parser.LabelText() } at line { memoryAddressInUserCodeSpace }");
                 }
@@ -209,6 +215,10 @@ namespace assembler
                         else
                         {
                             var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].Item1 + this.currentSymbolTableOffset;
+                            if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].Item2)
+                            {
+                                throw new Exception(" symboltable has more variables than allocated memory space for symbols");
+                            }
                             Console.WriteLine($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
                             this.symbolTable[symbol] = symbolTableCurrentLocation;
                             //increment the offset.

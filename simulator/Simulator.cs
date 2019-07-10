@@ -5,6 +5,7 @@ using assembler;
 using System.Linq;
 using System.Linq.Expressions;
 using static assembler.Assembler;
+using System.Collections.ObjectModel;
 
 namespace simulator
 {
@@ -13,7 +14,7 @@ namespace simulator
     {
 
         public readonly int wordWidth = 16;
-        public List<ushort> mainMemory;
+        public ObservableCollection<ushort> mainMemory;
         public ushort ARegister { get { return this.Registers[nameof(ARegister)]; } set { this.Registers[nameof(ARegister)] = value; } }
         public ushort BRegister { get { return this.Registers[nameof(BRegister)]; } set { this.Registers[nameof(BRegister)] = value; } }
         public ushort ProgramCounter { get { return this.Registers[nameof(ProgramCounter)]; } set { this.Registers[nameof(ProgramCounter)] = value; } }
@@ -55,7 +56,7 @@ namespace simulator
         public eightChipsSimulator(int wordWidth, int memoryLength)
         {
             this.wordWidth = wordWidth;
-            this.mainMemory = Enumerable.Range(0, memoryLength).Select(x => (ushort)0).ToList();
+            this.mainMemory = new ObservableCollection<ushort>(Enumerable.Range(0, memoryLength).Select(x => (ushort)0));
             this.ARegister = 0;
             this.BRegister = 0;
             this.ProgramCounter = 0;
@@ -89,7 +90,40 @@ namespace simulator
                 //simulate.
                 ((Action<eightChipsSimulator, List<ushort>>)commandFunc)(this, operands);
             }
+        }
 
+        public void runSimulation(int steps)
+        {
+            var instructionCount = 0;
+
+            while (!HALT && steps < instructionCount)
+            {
+                instructionCount++;
+                this.TotalInstructionCount++;
+
+                //fetch instruction from the program counter.
+                var currentInstructionIndex = ProgramCounter;
+                var currentInstruction = mainMemory[currentInstructionIndex];
+                var operands = new List<ushort>();
+                //TODO - currently we only ever have one operand so just get the next location in memory.
+                operands.Add(mainMemory[currentInstructionIndex + 1]);
+                var commandFunc = commandToInstructionHelper.map[(assembler.CommandType)currentInstruction];
+
+                //simulate.
+                ((Action<eightChipsSimulator, List<ushort>>)commandFunc)(this, operands);
+            }
+        }
+
+        /// <summary>
+        /// While the simulator runs, monitor a specific memory address has taken
+        /// This function returns a handle that can be used to inspect the values this address has been assigned
+        /// so far during the execution.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public MonitorHandle<ushort> monitor(ushort address)
+        {
+            return new MonitorHandle<ushort>(address, this.mainMemory);
         }
     }
     static class commandToInstructionHelper
