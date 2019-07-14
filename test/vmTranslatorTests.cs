@@ -62,6 +62,20 @@ namespace Tests
                 push constant 100
             eq";
 
+        string ANDtestprogram1 =
+      @"push constant 6
+                push constant 5
+            and";
+
+        string ORtestprogram1 =
+@"push constant 6
+                push constant 5
+            or";
+
+        string NOTtestprogram1 =
+ @"push constant 1
+            not";
+
 
         [Test]
         public void simpleAddTest()
@@ -294,6 +308,102 @@ namespace Tests
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
             Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 100, 1, 0 }));
+        }
+
+        [Test]
+        public void ANDTest()
+        {
+            var path = Path.GetTempFileName();
+            System.IO.File.WriteAllText(path, ANDtestprogram1);
+
+            var translator = new vmtranslator.vmtranslator(path);
+            var assembly = translator.TranslateToAssembly().ToList();
+            assembly.Add(assembler.CommandType.HALT.ToString());
+            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            System.IO.File.WriteAllLines(path, assembly);
+
+            Assert.AreEqual("TEMP + 1", assembly[16]);
+
+            var assemblerInstance = new assembler.Assembler(path);
+            var assembledResult = assemblerInstance.ConvertToBinary();
+
+            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+
+            //setup a monitor
+            var handle = simulatorInstance.monitor(33040);
+
+            simulatorInstance.runSimulation();
+            var values = handle.getValues();
+            values.ForEach(x => Console.WriteLine(x));
+            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 6, 4 }));
+        }
+
+        [Test]
+        public void ORTest()
+        {
+            var path = Path.GetTempFileName();
+            System.IO.File.WriteAllText(path, ORtestprogram1);
+
+            var translator = new vmtranslator.vmtranslator(path);
+            var assembly = translator.TranslateToAssembly().ToList();
+            assembly.Add(assembler.CommandType.HALT.ToString());
+            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            System.IO.File.WriteAllLines(path, assembly);
+
+            Assert.AreEqual("TEMP + 1", assembly[16]);
+
+            var assemblerInstance = new assembler.Assembler(path);
+            var assembledResult = assemblerInstance.ConvertToBinary();
+
+            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+
+            //setup a monitor
+            var handle = simulatorInstance.monitor(33040);
+
+            simulatorInstance.runSimulation();
+            var values = handle.getValues();
+            values.ForEach(x => Console.WriteLine(x));
+            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 6, 7 }));
+        }
+
+        [Test]
+        public void NOTTest()
+        {
+            var path = Path.GetTempFileName();
+            System.IO.File.WriteAllText(path, NOTtestprogram1);
+
+            var translator = new vmtranslator.vmtranslator(path);
+            var assembly = translator.TranslateToAssembly().ToList();
+            assembly.Add(assembler.CommandType.HALT.ToString());
+            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            System.IO.File.WriteAllLines(path, assembly);
+
+            Assert.AreEqual("TEMP + 1", assembly[16]);
+
+            var assemblerInstance = new assembler.Assembler(path);
+            var assembledResult = assemblerInstance.ConvertToBinary();
+
+            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+
+            //setup a monitor
+            var handle = simulatorInstance.monitor(33040);
+
+            simulatorInstance.runSimulation();
+            var values = handle.getValues();
+            values.ForEach(x => Console.WriteLine(x));
+            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 1, 65534 }));
         }
     }
 }

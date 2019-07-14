@@ -331,6 +331,40 @@ namespace simulator
                    incrementCounter(simulator, 2);
                }),
 
+            [assembler.CommandType.AND] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
+       {
+           var operandAsInt = operands[0];
+           var dataToAND = simulator.mainMemory[operandAsInt];
+           simulator.BRegister = dataToAND;
+           var a = simulator.ARegister;
+           var b = simulator.BRegister;
+           var result = (ushort)(a & b);
+           simulator.ARegister = result;
+
+           incrementCounter(simulator, 2);
+       }),
+            [assembler.CommandType.OR] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
+            {
+                var operandAsInt = operands[0];
+                var dataToAND = simulator.mainMemory[operandAsInt];
+                simulator.BRegister = dataToAND;
+                var a = simulator.ARegister;
+                var b = simulator.BRegister;
+                var result = (ushort)(a | b);
+                simulator.ARegister = result;
+
+                incrementCounter(simulator, 2);
+            }),
+            [assembler.CommandType.NOT] = new Action<eightChipsSimulator, List<ushort>>((simulator, operands) =>
+                   {
+
+                       var a = simulator.ARegister;
+                       var b = simulator.BRegister;
+                       var result = (ushort)(~a);
+                       simulator.ARegister = result;
+
+                       incrementCounter(simulator, 1);
+                   }),
 
         };
 

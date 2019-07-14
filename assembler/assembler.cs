@@ -42,9 +42,20 @@ namespace assembler
         DIVIDE,
         MODULO,
 
+        //adding logical ops
+        //TODO need to add these to map of increments - .... should add a validator step.
+        AND,
+        OR,
+        NOT,
+
+
         ASSEM_LABEL = -1,
         ASSEM_STORE_MACRO = -2,
         ASSEM_DEFINE = -3,
+
+
+
+
 
     }
     public class Assembler
@@ -347,7 +358,14 @@ namespace assembler
                 [assembler.CommandType.MULTIPLY] = 2,
                 [assembler.CommandType.DIVIDE] = 2,
                 [assembler.CommandType.MODULO] = 2,
+                [assembler.CommandType.AND] = 2,
+                [assembler.CommandType.OR] = 2,
+                [assembler.CommandType.NOT] = 1,
             };
+            if (this.commandTypeToNumberOfLines.Count < Enum.GetValues(typeof(assembler.CommandType)).Length)
+            {
+                throw new Exception("missing increment in the commandTypeToNumberOfLines map ");
+            }
         }
 
         public bool Advance()

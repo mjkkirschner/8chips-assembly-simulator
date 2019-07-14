@@ -279,6 +279,98 @@ namespace vmtranslator
                 this.Output.AddRange(generateIncrement(stackPointer_symbol));
             }
 
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.lt)
+            {
+                var blockID = Guid.NewGuid().ToString("N");
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //load temp into B somehow
+                this.Output.Add(assembler.CommandType.LOADB.ToString());
+                this.Output.Add(temp_symbol);
+
+                // update flags
+                this.Output.Add(assembler.CommandType.UPDATEFLAGS.ToString());
+                // we need to return different results to the stack depending on
+                // if A>B or not - can do this using jumps.
+                this.Output.Add(assembler.CommandType.JUMPIFLESS.ToString());
+                this.Output.Add($"LT_TRUE_{blockID}");
+
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("0");
+                this.Output.Add(assembler.CommandType.JUMP.ToString());
+                this.Output.Add($"LT_STORE_STACK_{blockID}");
+
+                this.Output.Add($"(LT_TRUE_{blockID})");
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("1");
+
+                this.Output.Add($"(LT_STORE_STACK_{blockID})");
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.and)
+            {
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.Add(assembler.CommandType.AND.ToString());
+                this.Output.Add(temp_symbol);
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.or)
+            {
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.Add(assembler.CommandType.OR.ToString());
+                this.Output.Add(temp_symbol);
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.not)
+            {
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+
+                this.Output.Add(assembler.CommandType.NOT.ToString());
+
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
         }
 
         private void handlePushPop(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
