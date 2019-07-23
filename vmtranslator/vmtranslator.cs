@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using static vmtranslator.vmILParser;
 
 namespace vmtranslator
 {
@@ -50,6 +51,12 @@ namespace vmtranslator
         //TODO get rid of this, replace using assembler memory map.
         private int bootloaderOffset = 256;
 
+        public Dictionary<vmMemSegments, string> vmSegmentToSymbolName = new Dictionary<vmMemSegments, string>(){
+            {vmMemSegments.argument, arg_symbol},
+            {vmMemSegments.local,local_symbol},
+            {vmMemSegments._this,this_symbol},
+            {vmMemSegments.that,that_symbol},
+        };
 
         public List<string> Output = new List<string>();
 
@@ -68,7 +75,9 @@ namespace vmtranslator
             //SP = 33040
             this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
             //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
-
+            //TODO... do that somewhere once we start implementing functions?
+            //I assume we put this on the heap?
+            //this.Output.Add($"{local_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.heap].Item1}");
         }
 
         public vmIL2ASMWriter()
@@ -98,26 +107,37 @@ namespace vmtranslator
             };
         }
 
-        private string[] generateIncrement(string symbol)
+        private string[] generateIncrement(string symbol, string offset = "1", bool updateSymbol = true)
         {
-            return new string[]{
+            ushort result;
+            if (!ushort.TryParse(offset, out result))
+            {
+                throw new Exception("offset was not a valid int");
+            }
+
+            var output = new List<string>{
                 //load the symbol into A
                 assembler.CommandType.LOADA.ToString(),
                 symbol,
                 //load 1 into b
                 assembler.CommandType.LOADBIMMEDIATE.ToString(),
-                "1",
+                offset,
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
                 temp_symbol+" + 1",
                 //subtract the value at that mem address from A
                 assembler.CommandType.ADD.ToString(),
                 temp_symbol+" + 1",
-                //store result in original symbol
-                assembler.CommandType.STOREA.ToString(),
-                symbol
-
             };
+
+            if (updateSymbol)
+            {
+                //store result in original symbol
+                output.Add(assembler.CommandType.STOREA.ToString());
+                output.Add(symbol);
+            }
+            return output.ToArray();
+
         }
         private string[] generateMoveAtoTemp()
         {
@@ -126,6 +146,21 @@ namespace vmtranslator
                 //TODO should TEMP be a symbol like this or should we use the int instead directly?
                 temp_symbol,
             };
+        }
+
+        private string[] generatePopToSegment(vmILParser.vmMemSegments segment, string IndexOperand)
+        {
+            var output = new List<String>();
+            output.AddRange(generateIncrement(this.vmSegmentToSymbolName[segment], IndexOperand, updateSymbol:false));
+            output.AddRange(generateMoveAtoTemp());
+
+            output.AddRange(generateDecrement(stackPointer_symbol));
+            output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+            output.Add(stackPointer_symbol);
+
+            output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+            output.Add(temp_symbol);
+            return output.ToArray();
         }
 
         /// <summary>
@@ -375,6 +410,9 @@ namespace vmtranslator
 
         private void handlePushPop(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
         {
+            ////////////////////////////////////////////////////////////////////////////////////
+            /////PUSH - write to stack
+            /// ///////////////////////////////////////////////////////////////////////////////
 
             if (instructionData.Item1 == vmILParser.vmCommmandType.PUSH)
             {
@@ -390,10 +428,67 @@ namespace vmtranslator
                     this.Output.Add(stackPointer_symbol);
                     this.Output.AddRange(generateIncrement(stackPointer_symbol));
                 }
+                else if (segment == vmILParser.vmMemSegments.local)
+                {
+                    //if we are writing from local to stack - we need to read from memory at the base address
+                    //pointed to by the local symbol which is stored at LCL
+                    //flow is LoadA LCL
+                    //then increment A by index
+                    //store this in temp
 
+                    //add LCL and index and store in A
+                    this.Output.Add(assembler.CommandType.LOADA.ToString());
+                    this.Output.Add(local_symbol);
+                    this.Output.Add(assembler.CommandType.ADD.ToString());
+                    this.Output.Add(indexORValue);
+
+                    //store it on the stack, and increment SP
+                    this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                    this.Output.Add(stackPointer_symbol);
+                    this.Output.AddRange(generateIncrement(stackPointer_symbol));
+
+                }
+
+                else if (segment == vmILParser.vmMemSegments.argument)
+                {
+                    this.Output.Add(assembler.CommandType.LOADA.ToString());
+                    this.Output.Add(arg_symbol);
+                    this.Output.Add(assembler.CommandType.ADD.ToString());
+                    this.Output.Add(indexORValue);
+
+                    //store it on the stack, and increment SP
+                    this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                    this.Output.Add(stackPointer_symbol);
+                    this.Output.AddRange(generateIncrement(stackPointer_symbol));
+                }
+
+
+                ////////////////////////////////////////////////////////////////////////////////////
+                /////POP - write to memory
+                /// ///////////////////////////////////////////////////////////////////////////////
 
             }
-            //TODO handle POP
+
+            else if (instructionData.Item1 == vmILParser.vmCommmandType.POP)
+            {
+                var segment = Enum.Parse<vmILParser.vmMemSegments>(instructionData.Item3.FirstOrDefault());
+                var indexORValue = instructionData.Item3.Skip(1).FirstOrDefault();
+
+                if (segment == vmILParser.vmMemSegments.constant)
+                {
+                    throw new Exception("cannot write to constant segment ");
+
+                }
+                else if (segment == vmILParser.vmMemSegments.local)
+                {
+                    this.Output.AddRange(generatePopToSegment(vmMemSegments.local, indexORValue));
+                }
+                else if (segment == vmILParser.vmMemSegments.argument)
+                {
+                    this.Output.AddRange(generatePopToSegment(vmMemSegments.argument, indexORValue));
+                }
+
+            }
 
         }
 
@@ -407,6 +502,10 @@ namespace vmtranslator
                     break;
 
                 case vmILParser.vmCommmandType.PUSH:
+                    handlePushPop(instructionData);
+                    break;
+
+                case vmILParser.vmCommmandType.POP:
                     handlePushPop(instructionData);
                     break;
 

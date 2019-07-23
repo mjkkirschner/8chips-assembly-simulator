@@ -125,6 +125,20 @@ namespace simulator
         {
             return new MonitorHandle<ushort>(address, this.mainMemory);
         }
+
+        public void printMemory(int start, int end = ushort.MaxValue)
+        {
+            var columnsNum = 8;
+            for (int i = start; i < end; i = i + columnsNum)
+            {
+                var line = string.Empty;
+                for (var j = 0; j < columnsNum; j++)
+                {
+                    line = $"{line} | {this.mainMemory[i + j]}";
+                }
+                Console.WriteLine($"{i}: {line} ");
+            }
+        }
     }
     static class commandToInstructionHelper
     {
@@ -148,7 +162,7 @@ namespace simulator
               // store this in A register.
                 var operandAsInt = operands[0];
                 simulator.ARegister = simulator.mainMemory[operandAsInt];
-
+                Console.WriteLine($"LOADA:loading into A Reg {simulator.mainMemory[operandAsInt]} from at RAM[{operandAsInt}]");
                 incrementCounter(simulator, 2);
 
             }),
@@ -166,6 +180,7 @@ namespace simulator
                var b = simulator.BRegister;
                var result = (ushort)(a + b);
                simulator.ARegister = result;
+               Console.WriteLine($"ADD: Adding {a} from at A reg to {b} from B reg which was originally at memory address {operandAsInt}");
 
                incrementCounter(simulator, 2);
            }),
@@ -185,6 +200,7 @@ namespace simulator
            {
                var operandAsInt = operands[0];
                simulator.mainMemory[operandAsInt] = simulator.ARegister;
+               Console.WriteLine($"STOREA:storing {simulator.ARegister} from A register at RAM[{operandAsInt}]");
 
                incrementCounter(simulator, 2);
            }),
