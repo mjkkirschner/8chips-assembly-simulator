@@ -86,10 +86,8 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
-
-            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -117,10 +115,8 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
-
-            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -143,10 +139,8 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
-
-            Assert.AreEqual("TEMP + 1", assembly[16]);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -172,10 +166,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -199,10 +193,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -231,10 +225,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -259,10 +253,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -287,10 +281,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -319,10 +313,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -351,10 +345,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -383,10 +377,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
-            Assert.AreEqual("TEMP + 1", assembly[16]);
+           
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\assembler\assembler.csproj" />
+    <ProjectReference Include="..\core\core.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

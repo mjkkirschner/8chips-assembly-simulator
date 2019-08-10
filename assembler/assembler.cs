@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using assembler;
 using System.Linq;
+using core;
 
 namespace assembler
 {
@@ -62,6 +63,9 @@ namespace assembler
     {
 
         private string assemblyFilePath;
+
+        public Logger logger { get; }
+
         public Dictionary<string, int> symbolTable = new Dictionary<string, int>();
 
         public static Dictionary<MemoryMapKeys, Tuple<int, int>> MemoryMap = new Dictionary<MemoryMapKeys, Tuple<int, int>>{
@@ -91,12 +95,15 @@ namespace assembler
         public Assembler(string filePath)
         {
             this.assemblyFilePath = filePath;
+            this.logger = new core.Logger();
         }
 
         private IEnumerable<string> ExpandMacros(string assemblyFilePath)
         {
-            Console.WriteLine("PHASE: EXPAND MACROS");
-            var parser = new AssemblyParser(assemblyFilePath);
+
+            logger.log("PHASE: EXPAND MACROS");
+
+            var parser = new AssemblyParser(assemblyFilePath, null, this.logger);
             while (parser.HasMoreCommands() && parser.Advance())
             {
 
@@ -118,8 +125,11 @@ namespace assembler
                     parser.output.Add(parser.Operands()[1]);
                     parser.output.Add(nameof(CommandType.STOREA));
                     parser.output.Add(parser.Operands()[0]);
-                    Console.WriteLine("JUST EXPANDED A STORAGE MACRO");
-                    Console.WriteLine(string.Join(",", parser.output));
+
+                    logger.log("JUST EXPANDED A STORAGE MACRO");
+                    logger.log(string.Join(",", parser.output.TakeLast(4)));
+
+
 
                 }
                 //all other commands are unchanged
@@ -130,8 +140,10 @@ namespace assembler
                     {
                         parser.output = parser.output.Concat(parser.Operands()).ToList();
                     }
-                    Console.WriteLine("JUST EXPANDED NOTHING");
-                    Console.WriteLine(string.Join(Environment.NewLine, parser.output));
+
+                    logger.log("JUST EXPANDED NOTHING");
+                    logger.log(string.Join(Environment.NewLine, parser.output.Last()));
+
                 }
 
 
@@ -142,11 +154,12 @@ namespace assembler
 
         private void AddLabelsToSymbolTable(IEnumerable<string> code)
         {
-            Console.WriteLine("PHASE: FILL SYMBOL TABLE");
-            Console.WriteLine($"INPUT CODE:---{string.Join(Environment.NewLine, code)}---");
+
+            logger.log("PHASE: FILL SYMBOL TABLE");
+            logger.log($"INPUT CODE:---{string.Join(Environment.NewLine, code)}---");
 
             var outputLineCounter = 0;
-            var parser = new AssemblyParser(null, code);
+            var parser = new AssemblyParser(null, code, this.logger);
             while (parser.HasMoreCommands() && parser.Advance())
             {
 
@@ -170,22 +183,27 @@ namespace assembler
                     }
 
                     this.symbolTable[parser.LabelText()] = memoryAddressInUserCodeSpace;
-                    Console.WriteLine($"adding symbol {parser.LabelText() } at line { memoryAddressInUserCodeSpace }");
+
+                    logger.log($"adding symbol {parser.LabelText() } at line { memoryAddressInUserCodeSpace }");
+
                 }
                 else if (parser.CommandType() == CommandType.ASSEM_DEFINE)
                 {
                     var define = parser.Operands().FirstOrDefault();
                     var address = parser.Operands().Skip(1).FirstOrDefault();
                     this.symbolTable[define] = int.Parse(address);
-                    Console.WriteLine($"adding symbol {define } at line { address}");
+
+                    logger.log($"adding symbol {define } at line { address}");
+
                 }
             }
         }
         private IEnumerable<string> ConvertOpCodes(IEnumerable<string> code)
         {
-            Console.WriteLine("PHASE: CONVERT OPCODES TO OUTPUT FORMAT");
 
-            var parser = new AssemblyParser(null, code);
+            logger.log("PHASE: CONVERT OPCODES TO OUTPUT FORMAT");
+
+            var parser = new AssemblyParser(null, code, this.logger);
             var converter = new CodeConverter();
 
             while (parser.HasMoreCommands() && parser.Advance())
@@ -230,7 +248,7 @@ namespace assembler
                             {
                                 throw new Exception(" symboltable has more variables than allocated memory space for symbols");
                             }
-                            Console.WriteLine($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
+                            logger.log($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
                             this.symbolTable[symbol] = symbolTableCurrentLocation;
                             //increment the offset.
                             this.currentSymbolTableOffset = this.currentSymbolTableOffset + 1;
@@ -310,7 +328,9 @@ namespace assembler
 
         public Dictionary<CommandType, int> commandTypeToNumberOfLines = new Dictionary<CommandType, int>();
 
-        public AssemblyParser(string assemblyFilePath, IEnumerable<String> code = null)
+        public Logger logger { get; }
+
+        public AssemblyParser(string assemblyFilePath, IEnumerable<String> code = null, core.Logger logger = null)
         {
             if (code == null)
             {
@@ -321,6 +341,15 @@ namespace assembler
             {
                 this.allInputLines = code.ToArray();
             }
+            if (logger == null)
+            {
+                this.logger = new Logger();
+            }
+            else
+            {
+                this.logger = logger;
+            }
+
             this.SetInitialMaps();
         }
 
@@ -378,7 +407,7 @@ namespace assembler
             if (this.currentLine != null && this.currentLine != string.Empty)
             {
                 increment = this.commandTypeToNumberOfLines[this.CommandType()];
-                Console.WriteLine($"increment is {increment} for commandType: {this.CommandType()} : {this.currentLine}");
+                logger.log($"increment is {increment} for commandType: {this.CommandType()} : {this.currentLine}");
             }
 
             this.currentLineIndex = this.currentLineIndex + increment;
@@ -525,7 +554,8 @@ namespace assembler
                 // the operand might be hex, decimal, or binary... convert it.
                 this.output = this.output.Concat(this.Operands()).ToList();
             }
-            Console.WriteLine(string.Join(Environment.NewLine, this.output));
+            logger.log("*********parsed output*********");
+            logger.log(string.Join(Environment.NewLine, this.output));
         }
 
     }

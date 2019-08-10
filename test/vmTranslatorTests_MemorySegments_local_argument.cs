@@ -10,7 +10,7 @@ namespace Tests.Memory
 
 
 
-    public class VmTranslatorTests
+    public partial class VmTranslatorTests
     {
 
         string popLocalSimpleProgram =
@@ -33,7 +33,7 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -47,8 +47,8 @@ namespace Tests.Memory
 
             //setup monitors:
             var stackHandle = simulatorInstance.monitor(33040);
-            var local0 = simulatorInstance.monitor(0);
-            var local1 = simulatorInstance.monitor(1);
+            var local0 = simulatorInstance.monitor(100);
+            var local1 = simulatorInstance.monitor(101);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -88,7 +88,7 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -101,25 +101,26 @@ namespace Tests.Memory
             simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
 
             var stackHandle = simulatorInstance.monitor(33040);
-            var local0 = simulatorInstance.monitor(0);
-            var local1 = simulatorInstance.monitor(1);
+            var local0 = simulatorInstance.monitor(100);
+            var local1 = simulatorInstance.monitor(101);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
             var localValues0 = local0.getValues();
             var localValues1 = local1.getValues();
-            //simulatorInstance.printMemory(0);
             stackValues.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
             localValues0.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
             localValues1.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
-
+            
             Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10 }));
         }
 
-
+        //TODO these argument tests are flawed -
+        //currently argument and local point to the same baseaddress...
+        
         string pushAndPop_LocalAndArgument =
                @"push constant 2
          push constant 4
@@ -142,7 +143,7 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -155,8 +156,8 @@ namespace Tests.Memory
             simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
 
             var stackHandle = simulatorInstance.monitor(33040);
-            var local0 = simulatorInstance.monitor(0);
-            var local1 = simulatorInstance.monitor(1);
+           var local0 = simulatorInstance.monitor(100);
+            var local1 = simulatorInstance.monitor(101);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -193,7 +194,7 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            assembly.ToList().ForEach(x => Console.WriteLine(x));
+            
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -206,8 +207,8 @@ namespace Tests.Memory
             simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
 
             var stackHandle = simulatorInstance.monitor(33040);
-            var argument0 = simulatorInstance.monitor(0);
-            var argument1 = simulatorInstance.monitor(1);
+            var argument0 = simulatorInstance.monitor(200);
+            var argument1 = simulatorInstance.monitor(201);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();

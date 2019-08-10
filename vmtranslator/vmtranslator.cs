@@ -10,10 +10,13 @@ namespace vmtranslator
     public class vmtranslator
     {
         private string path;
-        public vmtranslator(string path)
+
+        public core.Logger logger { get; }
+
+        public vmtranslator(string path, core.Logger logger = null)
         {
             this.path = path;
-
+            this.logger = logger ?? new core.Logger();
         }
 
         public string[] TranslateToAssembly()
@@ -30,8 +33,8 @@ namespace vmtranslator
             {
                 var parser = new vmILParser(this.path, codeWriter);
                 parser.Parse();
-                Console.WriteLine("output is:");
-                codeWriter.Output.ForEach(x => Console.Write(x));
+                this.logger.log("output of vm translation is:");
+                codeWriter.Output.ForEach(x => this.logger.log(x));
                 return codeWriter.Output.ToArray();
             }
         }
@@ -48,6 +51,8 @@ namespace vmtranslator
         private const string this_symbol = "THIS";
         private const string that_symbol = "THAT";
         private const string temp_symbol = "TEMP";
+
+        private const string pointer_symbol = "POINTER";
         //TODO get rid of this, replace using assembler memory map.
         private int bootloaderOffset = 256;
 
@@ -56,7 +61,23 @@ namespace vmtranslator
             {vmMemSegments.local,local_symbol},
             {vmMemSegments._this,this_symbol},
             {vmMemSegments.that,that_symbol},
+            {vmMemSegments.pointer,pointer_symbol}
         };
+
+        public vmMemSegments parseVmSegment(string segmentSymbol)
+        {
+            //some conversions because of c# reserved keywords
+            if (segmentSymbol.Trim().ToLower() == "static")
+            {
+                segmentSymbol = "_static";
+            }
+            if (segmentSymbol.Trim().ToLower() == "this")
+            {
+                segmentSymbol = "_this";
+            }
+
+            return Enum.Parse<vmILParser.vmMemSegments>(segmentSymbol);
+        }
 
         public List<string> Output = new List<string>();
 
@@ -74,6 +95,13 @@ namespace vmtranslator
             //set the pointers to the right values
             //SP = 33040
             this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
+            this.Output.Add($"{pointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.pointers_registers].Item1 + 3 }");
+            //TODO for the sake of testing lets set some base addresses that are non zero.
+            this.Output.Add($"{local_symbol} = {100}");
+            this.Output.Add($"{arg_symbol} = {200}");
+            //
+            this.Output.Add($"{this_symbol} = {pointer_symbol} + 0 ");
+            this.Output.Add($"{that_symbol} = {pointer_symbol} + 1 ");
             //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
             //TODO... do that somewhere once we start implementing functions?
             //I assume we put this on the heap?
@@ -148,10 +176,11 @@ namespace vmtranslator
             };
         }
 
-        private string[] generatePopToSegment(vmILParser.vmMemSegments segment, string IndexOperand)
+        private string[] generatePopToStackFromSegment(vmILParser.vmMemSegments segment, string IndexOperand)
         {
             var output = new List<String>();
-            output.AddRange(generateIncrement(this.vmSegmentToSymbolName[segment], IndexOperand, updateSymbol:false));
+            //offset the base address of the symbol by the index
+            output.AddRange(generateIncrement(this.vmSegmentToSymbolName[segment], IndexOperand, updateSymbol: false));
             output.AddRange(generateMoveAtoTemp());
 
             output.AddRange(generateDecrement(stackPointer_symbol));
@@ -160,6 +189,31 @@ namespace vmtranslator
 
             output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
             output.Add(temp_symbol);
+            return output.ToArray();
+        }
+
+        private string[] generatePushToStackFromSegment(vmILParser.vmMemSegments segment, string index)
+        {
+            //if we are writing from local to stack - we need to read from memory at the base address
+            //pointed to by the local symbol which is stored at LCL
+            //flow is LoadAFromPointer LCL - lets assume LCL holds the number 100 - which is the base address for the LCL segment
+            //then increment A by index
+            //store this in temp
+            var output = new List<String>();
+            //add LCL and index and store in A
+
+            output.AddRange(generateIncrement(vmSegmentToSymbolName[segment], index , updateSymbol: false));
+
+            output.Add(assembler.CommandType.STOREA.ToString());
+            output.Add(temp_symbol + " + 2");
+
+            output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+            output.Add(temp_symbol + " + 2");
+
+            //store it on the stack, and increment SP
+            output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+            output.Add(stackPointer_symbol);
+            output.AddRange(generateIncrement(stackPointer_symbol));
             return output.ToArray();
         }
 
@@ -416,9 +470,10 @@ namespace vmtranslator
 
             if (instructionData.Item1 == vmILParser.vmCommmandType.PUSH)
             {
-                //for now we'll only get commands like
-                //push constant 11
-                var segment = Enum.Parse<vmILParser.vmMemSegments>(instructionData.Item3.FirstOrDefault());
+              
+                //memory instructions look like
+                //pop segment index
+                var segment = parseVmSegment(instructionData.Item3.FirstOrDefault());
                 var indexORValue = instructionData.Item3.Skip(1).FirstOrDefault();
                 if (segment == vmILParser.vmMemSegments.constant)
                 {
@@ -428,38 +483,32 @@ namespace vmtranslator
                     this.Output.Add(stackPointer_symbol);
                     this.Output.AddRange(generateIncrement(stackPointer_symbol));
                 }
+                //segments
                 else if (segment == vmILParser.vmMemSegments.local)
                 {
-                    //if we are writing from local to stack - we need to read from memory at the base address
-                    //pointed to by the local symbol which is stored at LCL
-                    //flow is LoadA LCL
-                    //then increment A by index
-                    //store this in temp
-
-                    //add LCL and index and store in A
-                    this.Output.Add(assembler.CommandType.LOADA.ToString());
-                    this.Output.Add(local_symbol);
-                    this.Output.Add(assembler.CommandType.ADD.ToString());
-                    this.Output.Add(indexORValue);
-
-                    //store it on the stack, and increment SP
-                    this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
-                    this.Output.Add(stackPointer_symbol);
-                    this.Output.AddRange(generateIncrement(stackPointer_symbol));
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments.local, indexORValue));
 
                 }
 
                 else if (segment == vmILParser.vmMemSegments.argument)
                 {
-                    this.Output.Add(assembler.CommandType.LOADA.ToString());
-                    this.Output.Add(arg_symbol);
-                    this.Output.Add(assembler.CommandType.ADD.ToString());
-                    this.Output.Add(indexORValue);
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments.argument, indexORValue));
+                }
 
-                    //store it on the stack, and increment SP
-                    this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
-                    this.Output.Add(stackPointer_symbol);
-                    this.Output.AddRange(generateIncrement(stackPointer_symbol));
+                else if (segment == vmILParser.vmMemSegments.pointer)
+                {
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments.pointer, indexORValue));
+                }
+
+                else if (segment == vmILParser.vmMemSegments._this)
+                {
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments._this, indexORValue));
+                }
+
+                else if (segment == vmILParser.vmMemSegments.that)
+                {
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments.that, indexORValue));
+
                 }
 
 
@@ -471,7 +520,7 @@ namespace vmtranslator
 
             else if (instructionData.Item1 == vmILParser.vmCommmandType.POP)
             {
-                var segment = Enum.Parse<vmILParser.vmMemSegments>(instructionData.Item3.FirstOrDefault());
+                var segment = parseVmSegment(instructionData.Item3.FirstOrDefault());
                 var indexORValue = instructionData.Item3.Skip(1).FirstOrDefault();
 
                 if (segment == vmILParser.vmMemSegments.constant)
@@ -481,11 +530,23 @@ namespace vmtranslator
                 }
                 else if (segment == vmILParser.vmMemSegments.local)
                 {
-                    this.Output.AddRange(generatePopToSegment(vmMemSegments.local, indexORValue));
+                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.local, indexORValue));
                 }
                 else if (segment == vmILParser.vmMemSegments.argument)
                 {
-                    this.Output.AddRange(generatePopToSegment(vmMemSegments.argument, indexORValue));
+                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.argument, indexORValue));
+                }
+                else if (segment == vmILParser.vmMemSegments.pointer)
+                {
+                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.pointer, indexORValue));
+                }
+                else if (segment == vmILParser.vmMemSegments._this)
+                {
+                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments._this, indexORValue));
+                }
+                else if (segment == vmILParser.vmMemSegments.that)
+                {
+                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.that, indexORValue));
                 }
 
             }
