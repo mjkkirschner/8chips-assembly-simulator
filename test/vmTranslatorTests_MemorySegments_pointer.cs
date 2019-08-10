@@ -13,6 +13,11 @@ namespace Tests.Memory
     public partial class VmTranslatorTests
     {
 
+        //reference
+        // This code is part of www.nand2tetris.org
+        // and the book "The Elements of Computing Systems"
+        // by Nisan and Schocken, MIT Press.
+        // File name: projects/07/MemoryAccess/PointerTest/PointerTest.vm
         string pointerTest1 =
            @"push constant 3030
             pop pointer 0
