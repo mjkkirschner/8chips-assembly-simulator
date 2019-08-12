@@ -176,7 +176,7 @@ namespace vmtranslator
             };
         }
 
-        private string[] generatePopToStackFromSegment(vmILParser.vmMemSegments segment, string IndexOperand)
+        private string[] generatePopFromStackToSegment(vmILParser.vmMemSegments segment, string IndexOperand)
         {
             var output = new List<String>();
             //offset the base address of the symbol by the index
@@ -202,7 +202,7 @@ namespace vmtranslator
             var output = new List<String>();
             //add LCL and index and store in A
 
-            output.AddRange(generateIncrement(vmSegmentToSymbolName[segment], index , updateSymbol: false));
+            output.AddRange(generateIncrement(vmSegmentToSymbolName[segment], index, updateSymbol: false));
 
             output.Add(assembler.CommandType.STOREA.ToString());
             output.Add(temp_symbol + " + 2");
@@ -232,7 +232,7 @@ namespace vmtranslator
 
         }
 
-        private void handleArithmeticCommand(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
+        private void handleArithmeticCommand(InstructionData instructionData)
         {
             //depending on the specific ALU command we need to generate the appropriate ASM command
             //there will be no operands for these commands - 
@@ -248,7 +248,7 @@ namespace vmtranslator
             //we'll assume there is always a symbol called "stackpointer" which points to the last item in the stack.
 
 
-            vmILParser.vmArithmetic_Logic_Instructions subCommand = (vmILParser.vmArithmetic_Logic_Instructions)instructionData.Item2;
+            vmILParser.vmArithmetic_Logic_Instructions subCommand = (vmILParser.vmArithmetic_Logic_Instructions)instructionData.CommmandObject;
             //ADD
             if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.add)
             {
@@ -462,19 +462,19 @@ namespace vmtranslator
 
         }
 
-        private void handlePushPop(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
+        private void handlePushPop(InstructionData instructionData)
         {
             ////////////////////////////////////////////////////////////////////////////////////
             /////PUSH - write to stack
             /// ///////////////////////////////////////////////////////////////////////////////
 
-            if (instructionData.Item1 == vmILParser.vmCommmandType.PUSH)
+            if (instructionData.CommandType == vmILParser.vmCommmandType.PUSH)
             {
-              
+
                 //memory instructions look like
                 //pop segment index
-                var segment = parseVmSegment(instructionData.Item3.FirstOrDefault());
-                var indexORValue = instructionData.Item3.Skip(1).FirstOrDefault();
+                var segment = parseVmSegment(instructionData.Operands.FirstOrDefault());
+                var indexORValue = instructionData.Operands.Skip(1).FirstOrDefault();
                 if (segment == vmILParser.vmMemSegments.constant)
                 {
                     this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
@@ -518,10 +518,10 @@ namespace vmtranslator
 
             }
 
-            else if (instructionData.Item1 == vmILParser.vmCommmandType.POP)
+            else if (instructionData.CommandType == vmILParser.vmCommmandType.POP)
             {
-                var segment = parseVmSegment(instructionData.Item3.FirstOrDefault());
-                var indexORValue = instructionData.Item3.Skip(1).FirstOrDefault();
+                var segment = parseVmSegment(instructionData.Operands.FirstOrDefault());
+                var indexORValue = instructionData.Operands.Skip(1).FirstOrDefault();
 
                 if (segment == vmILParser.vmMemSegments.constant)
                 {
@@ -530,23 +530,23 @@ namespace vmtranslator
                 }
                 else if (segment == vmILParser.vmMemSegments.local)
                 {
-                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.local, indexORValue));
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments.local, indexORValue));
                 }
                 else if (segment == vmILParser.vmMemSegments.argument)
                 {
-                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.argument, indexORValue));
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments.argument, indexORValue));
                 }
                 else if (segment == vmILParser.vmMemSegments.pointer)
                 {
-                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.pointer, indexORValue));
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments.pointer, indexORValue));
                 }
                 else if (segment == vmILParser.vmMemSegments._this)
                 {
-                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments._this, indexORValue));
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments._this, indexORValue));
                 }
                 else if (segment == vmILParser.vmMemSegments.that)
                 {
-                    this.Output.AddRange(generatePopToStackFromSegment(vmMemSegments.that, indexORValue));
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments.that, indexORValue));
                 }
 
             }
@@ -554,9 +554,9 @@ namespace vmtranslator
         }
 
 
-        public void handleCommand(Tuple<vmILParser.vmCommmandType, object, string[]> instructionData)
+        public void handleCommand(InstructionData instructionData)
         {
-            switch (instructionData.Item1)
+            switch (instructionData.CommandType)
             {
                 case vmILParser.vmCommmandType.ARITHMETIC:
                     handleArithmeticCommand(instructionData);
@@ -585,6 +585,7 @@ namespace vmtranslator
         private int currentLineIndex = -1;
         private string currentLine = string.Empty;
         private vmIL2ASMWriter writer;
+        private string currentVMFunction = null;
 
         public vmILParser(string filePath, vmIL2ASMWriter writer)
         {
@@ -683,11 +684,10 @@ namespace vmtranslator
 
 
         /// <summary>
-        /// extract info about the current instruction - 
+        /// retruns info about the current VM instruction including where it was parsed from.
         /// </summary>
-        /// <returns> returns a tuple containg the general VM command type,
-        ///  the exact command, and the operands as an array of strings.</returns>
-        public Tuple<vmCommmandType, object, string[]> getCurrentCommandType()
+        /// <returns></returns>
+        public InstructionData getCurrentCommandType()
         {
 
             vmCommmandType cmdType = vmCommmandType.NULL;
@@ -700,7 +700,7 @@ namespace vmtranslator
             {
                 //it matched an ALU command.
                 cmdType = vmCommmandType.ARITHMETIC;
-                return new Tuple<vmCommmandType, object, string[]>(cmdType, parsedEnum, this.Operands());
+                return new InstructionData(cmdType, parsedEnum, this.Operands(), this.filePath, this.currentVMFunction);
 
             }
             parseResult = System.Enum.TryParse(typeof(vmMemoryAccess_instructions), firstItemInLine, out parsedEnum);
@@ -716,10 +716,21 @@ namespace vmtranslator
                 {
                     cmdType = vmCommmandType.PUSH;
                 }
-                return new Tuple<vmCommmandType, object, string[]>(cmdType, parsedEnum, this.Operands());
+                return new InstructionData(cmdType, parsedEnum, this.Operands(), this.filePath, this.currentVMFunction);
 
             }
 
+            //not memory access or arithmetic, lets try other command types
+            parseResult = System.Enum.TryParse(typeof(vmCommmandType), firstItemInLine, out parsedEnum);
+            if (parseResult && parsedEnum != null)
+            {
+                cmdType = (vmCommmandType)parsedEnum;
+                if (cmdType == vmCommmandType.FUNCTION)
+                {
+                    this.currentVMFunction = this.Operands().First();
+                }
+                return new InstructionData(cmdType, parsedEnum, this.Operands(), this.filePath, this.currentVMFunction);
+            }
 
 
             throw new Exception($"could not parse current line to command: {this.currentLine},{this.currentLineIndex} ");
