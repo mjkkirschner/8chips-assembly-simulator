@@ -76,8 +76,54 @@ namespace Tests
  @"push constant 1
             not";
 
+        // This code is part of www.nand2tetris.org
+        // and the book "The Elements of Computing Systems"
+        // by Nisan and Schocken, MIT Press.
+        // File name: projects/07/StackArithmetic/StackTest/StackTest.vm
 
-        [Test]
+        // Executes a sequence of arithmetic and logical operations
+        // on the stack. 
+        string complexStack =
+        @"push constant 17
+push constant 17
+eq
+push constant 17
+push constant 16
+eq
+push constant 16
+push constant 17
+eq
+push constant 892
+push constant 891
+lt
+push constant 891
+push constant 892
+lt
+push constant 891
+push constant 891
+lt
+push constant 32767
+push constant 32766
+gt
+push constant 32766
+push constant 32767
+gt
+push constant 32766
+push constant 32766
+gt
+push constant 57
+push constant 31
+push constant 53
+add
+push constant 112
+sub
+neg
+and
+push constant 82
+or
+not";
+
+                [Test]
         public void simpleAddTest()
         {
             var path = Path.GetTempFileName();
@@ -86,7 +132,7 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -115,7 +161,7 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -139,7 +185,7 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
@@ -166,10 +212,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -193,10 +239,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -225,10 +271,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -253,10 +299,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -281,10 +327,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -313,10 +359,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -345,10 +391,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -377,10 +423,10 @@ namespace Tests
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
-           
+
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
@@ -398,6 +444,38 @@ namespace Tests
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
             Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 1, 65534 }));
+        }
+
+        [Test]
+        public void complexTest()
+        {
+            var path = Path.GetTempFileName();
+            System.IO.File.WriteAllText(path, complexStack);
+
+            var translator = new vmtranslator.vmtranslator(path);
+            var assembly = translator.TranslateToAssembly().ToList();
+            assembly.Add(assembler.CommandType.HALT.ToString());
+
+            System.IO.File.WriteAllLines(path, assembly);
+
+
+
+            var assemblerInstance = new assembler.Assembler(path);
+            var assembledResult = assemblerInstance.ConvertToBinary();
+
+            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+
+            var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.setUserCode(binaryProgram.ToArray());
+            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+
+            //setup a monitor
+            var handle = simulatorInstance.monitor(33040);
+
+            simulatorInstance.runSimulation();
+            var values = handle.getValues();
+            values.ForEach(x => Console.WriteLine(x));
+            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 1, 91 }));
         }
     }
 }

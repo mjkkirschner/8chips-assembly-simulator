@@ -57,7 +57,7 @@ add";
             simulatorInstance.runSimulation();
             simulatorInstance.printMemory(0);
 
-            Assert.AreEqual(6084, simulatorInstance.mainMemory[33040]);
+            Assert.AreEqual(1110, simulatorInstance.mainMemory[33040]);
 
 
             //pointers are set correctly
