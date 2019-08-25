@@ -93,9 +93,9 @@ namespace vmtranslator
 
 
             //set the pointers to the right values
-            //SP = 33040
-            this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
-            this.Output.Add($"{pointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.pointers_registers].Item1 + 3 }");
+            //SP = 0 (on page 1)
+            this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].StartOnPage}");
+            this.Output.Add($"{pointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.pointers_registers].StartOnPage + 3 }");
             //TODO for the sake of testing lets set some base addresses that are non zero.
             this.Output.Add($"{local_symbol} = {100}");
             this.Output.Add($"{arg_symbol} = {200}");
@@ -137,8 +137,8 @@ namespace vmtranslator
 
         private string[] generateIncrement(string symbol, string offset = "1", bool updateSymbol = true)
         {
-            ushort result;
-            if (!ushort.TryParse(offset, out result))
+            short result;
+            if (!short.TryParse(offset, out result))
             {
                 throw new Exception("offset was not a valid int");
             }

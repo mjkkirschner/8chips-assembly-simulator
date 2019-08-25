@@ -123,7 +123,7 @@ push constant 82
 or
 not";
 
-                [Test]
+        [Test]
         public void simpleAddTest()
         {
             var path = Path.GetTempFileName();
@@ -138,11 +138,13 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            //TODO - rearrange memory map...
+            //Or make PC int?
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
             //TODO make this lookup the current SP location.
             Assert.AreEqual(simulatorInstance.mainMemory[33040], 15);
@@ -167,11 +169,11 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
             Assert.AreEqual(simulatorInstance.mainMemory[0], -1);
 
@@ -191,11 +193,11 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
 
             //TODO make this lookup the current SP location.
@@ -220,14 +222,14 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
             //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 110);
+            Assert.AreEqual(simulatorInstance.mainMemory[32768], 110);
 
         }
         [Test]
@@ -247,18 +249,18 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(0, 1);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 7, 15, 16, 116, 16 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 7, 15, 16, 116, 16 }));
 
         }
 
@@ -279,11 +281,11 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
             //TODO make this lookup the current SP location.
             Assert.AreEqual(simulatorInstance.mainMemory[33040], 0);
@@ -307,11 +309,11 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
             //TODO make this lookup the current SP location.
             Assert.AreEqual(simulatorInstance.mainMemory[33040], 1);
@@ -335,19 +337,19 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(0, 1);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 100, 1, 0 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 100, 1, 0 }));
         }
 
         [Test]
@@ -367,19 +369,20 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var handle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 6, 4 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 6, 4 }));
         }
 
         [Test]
@@ -399,19 +402,20 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var handle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 6, 7 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 6, 7 }));
         }
 
         [Test]
@@ -431,19 +435,20 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var handle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 1, 65534 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 1, -1 }));
         }
 
         [Test]
@@ -463,19 +468,20 @@ not";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+             var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var handle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<ushort>() { 0, 1, 91 }));
+            Assert.IsTrue(values.SequenceEqual(new List<short>() { 0, 1, 91 }));
         }
     }
 }

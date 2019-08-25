@@ -37,6 +37,8 @@ namespace simulatorUI
 @"increment = 1
 width = 256
 height = 256
+page = 0
+
 (START)
 LOADAIMMEDIATE
 1100
@@ -50,21 +52,47 @@ pixelindex
 (COLORWHITE)
 LOADA
 pixelindex
+LOADPAGE
+page
 STOREAATPOINTER
 pixelindex
+LOADPAGEIMMEDIATE
+0
 
 (DONECHECK)
 LOADA
 pixelindex
 LOADBIMMEDIATE
-65000
+32000
 UPDATEFLAGS
 JUMPIFLESS
 ADD_1
+//if page is 0 - set it to 1
+//if page is 1 - set it to 0
+LOADA 
+page
+LOADBIMMEDIATE
+0
+UPDATEFLAGS
+JUMPIFEQUAL
+SET_PAGE_TO_1
+
+LOADAIMMEDIATE
+0
+STOREA
+page
+
+JUMP
+START
+
+(SET_PAGE_TO_1)
+LOADAIMMEDIATE
+1
+STOREA
+page
+
 JUMP
 START";
-
-
 
         static void Main(string[] args)
         {
@@ -75,7 +103,7 @@ START";
             System.IO.File.WriteAllText(path, testVGAOutputProgram);
             var assemblerInst = new assembler.Assembler(path);
             var assembledResult = assemblerInst.ConvertToBinary();
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             //lets convert our final assembled program back to assembly instructions so we can view it.
             //dissasembly)
@@ -89,7 +117,7 @@ START";
             //TODO use cancellation token here.
             simulationThread = Task.Run(() =>
               {
-                  simulatorInstance.ProgramCounter = (ushort)assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1;
+                  simulatorInstance.ProgramCounter = (short)assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].StartOnPage;
                   simulatorInstance.runSimulation();
               });
 
@@ -230,7 +258,7 @@ START";
                 ImGui.Text("Expanded Assembly");
                 ImGui.ListBox("", ref currentProgramLine, expandedCode, expandedCode.Length, expandedCode.Length);
                 //TODO I think this is going to be offset incorrectly based on how many labels were removed during expansion...
-                currentProgramLine = simulatorInstance.ProgramCounter -assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1 ;
+                currentProgramLine = simulatorInstance.ProgramCounter - assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].AbsoluteStart;
 
                 int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(Convert.ToInt32(x).ToBinary())).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];

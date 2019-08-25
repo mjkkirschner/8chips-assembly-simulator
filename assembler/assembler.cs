@@ -39,6 +39,8 @@ namespace assembler
         STORECOMDATA,
         STOREAATPOINTER,
         LOADAATPOINTER,
+        LOADPAGEIMMEDIATE,
+        LOADPAGE,
         MULTIPLY,
         DIVIDE,
         MODULO,
@@ -59,6 +61,37 @@ namespace assembler
 
 
     }
+
+    public struct MemoryMapSegment
+    {
+        public int AbsoluteStart { get; private set; }
+        public int AbsoluteEnd { get; private set; }
+        public int Page { get; private set; }
+
+        public int PageLength { get; private set; }
+
+        public int StartOnPage
+        {   //example 40000 - 32k*1 = 8k on page 1.
+            //example 10 - 32k*0 = 10 on page 0
+            get => this.AbsoluteStart - (this.PageLength * Page);
+        }
+        public MemoryMapSegment(int absStart, int absEnd, int pageLength)
+        {
+            this.AbsoluteStart = absStart;
+            this.AbsoluteEnd = absEnd;
+            this.PageLength = pageLength;
+
+            var pagePosition = (double)(AbsoluteEnd / pageLength);
+            //handle the case that the position is exactly on the boundary of a page,
+            //we should point to the lower page.
+            if (pagePosition == Math.Floor(pagePosition))
+            {
+                pagePosition = pagePosition - 1;
+            }
+            this.Page = (int)Math.Floor(pagePosition);
+        }
+    }
+
     public class Assembler
     {
 
@@ -68,14 +101,14 @@ namespace assembler
 
         public Dictionary<string, int> symbolTable = new Dictionary<string, int>();
 
-        public static Dictionary<MemoryMapKeys, Tuple<int, int>> MemoryMap = new Dictionary<MemoryMapKeys, Tuple<int, int>>{
-            {MemoryMapKeys.bootloader,Tuple.Create(0,255)},
-             {MemoryMapKeys.pointers_registers,Tuple.Create(256,271)},
-              {MemoryMapKeys.symbols,Tuple.Create(272,527)},
-                {MemoryMapKeys.user_code,Tuple.Create(528,33039)},
-                 {MemoryMapKeys.stack,Tuple.Create(33040,34839)},
-                   {MemoryMapKeys.heap,Tuple.Create(34840,48839)},
-                    {MemoryMapKeys.frame_buffer,Tuple.Create(48840,65223)},
+        public static Dictionary<MemoryMapKeys, MemoryMapSegment> MemoryMap = new Dictionary<MemoryMapKeys, MemoryMapSegment>{
+            {MemoryMapKeys.bootloader,new MemoryMapSegment(0,255,short.MaxValue)},
+             {MemoryMapKeys.pointers_registers,new MemoryMapSegment(256,271,short.MaxValue)},
+              {MemoryMapKeys.symbols,new MemoryMapSegment(272,527,short.MaxValue)},
+                {MemoryMapKeys.user_code,new MemoryMapSegment(528,32767,short.MaxValue)},
+                 {MemoryMapKeys.stack,new MemoryMapSegment(32768,34839,short.MaxValue)},
+                   {MemoryMapKeys.heap,new MemoryMapSegment(34840,48839,short.MaxValue)},
+                    {MemoryMapKeys.frame_buffer,new MemoryMapSegment(48840,65223,short.MaxValue)},
 
         };
         private int currentSymbolTableOffset = 0;
@@ -175,7 +208,7 @@ namespace assembler
                 //if we see a label, add a symbol for the address it points to.
                 else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
-                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].Item1;
+                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
                     if (this.symbolTable.ContainsKey(parser.LabelText()))
                     {
@@ -243,8 +276,8 @@ namespace assembler
                         //transfer time will just increase.
                         else
                         {
-                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].Item1 + this.currentSymbolTableOffset;
-                            if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].Item2)
+                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].AbsoluteStart + this.currentSymbolTableOffset;
+                            if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].AbsoluteEnd)
                             {
                                 throw new Exception(" symboltable has more variables than allocated memory space for symbols");
                             }
@@ -384,6 +417,8 @@ namespace assembler
                 [assembler.CommandType.ASSEM_DEFINE] = 1,
 
                 [assembler.CommandType.LOADAATPOINTER] = 2,
+                [assembler.CommandType.LOADPAGEIMMEDIATE] = 2,
+                [assembler.CommandType.LOADPAGE] = 2,
                 [assembler.CommandType.MULTIPLY] = 2,
                 [assembler.CommandType.DIVIDE] = 2,
                 [assembler.CommandType.MODULO] = 2,

@@ -10,12 +10,15 @@ namespace simulator
         public T Address { get; }
         private ObservableCollection<T> Memory;
         private List<T> historicalValues = new List<T>();
-        public MonitorHandle(T address, ObservableCollection<T> memory)
+        public MonitorHandle(T address, int page, ObservableCollection<T> memory)
         {
             this.Address = address;
             this.Memory = memory;
             var addressAsInt32 = Convert.ToInt32(address);
-            this.historicalValues.Add(this.Memory[addressAsInt32]);
+            //TODO - the multiplication here should be based on T ... maybe just use a switch case for common values.
+            //short,ushort,int...
+            var finalAddress = addressAsInt32 + (page * short.MaxValue);
+            this.historicalValues.Add(this.Memory[finalAddress]);
             //hookup our monitor
             this.Memory.CollectionChanged += (s, e) =>
             {

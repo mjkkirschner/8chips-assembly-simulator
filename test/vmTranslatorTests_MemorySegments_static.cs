@@ -47,11 +47,11 @@ add";
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].StartOnPage;
 
 
             simulatorInstance.runSimulation();

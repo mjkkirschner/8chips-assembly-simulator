@@ -33,22 +33,23 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].StartOnPage;
 
             //setup monitors:
-            var stackHandle = simulatorInstance.monitor(33040);
-            var local0 = simulatorInstance.monitor(100);
-            var local1 = simulatorInstance.monitor(101);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var stackHandle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
+            var local0 = simulatorInstance.monitor(100, 0);
+            var local1 = simulatorInstance.monitor(101, 0);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -63,9 +64,9 @@ namespace Tests.Memory
             Console.WriteLine("_____");
 
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, }));
-            Assert.IsTrue(localValues0.SequenceEqual(new List<ushort>() { 0, 10, 4 }));
-            Assert.IsTrue(localValues1.SequenceEqual(new List<ushort>() { 0, 2, }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<short>() { 0, 2, }));
+            Assert.IsTrue(localValues0.SequenceEqual(new List<short>() { 0, 10, 4 }));
+            Assert.IsTrue(localValues1.SequenceEqual(new List<short>() { 0, 2, }));
         }
 
         string pushAndPop_Local =
@@ -88,21 +89,22 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].StartOnPage;
 
-            var stackHandle = simulatorInstance.monitor(33040);
-            var local0 = simulatorInstance.monitor(100);
-            var local1 = simulatorInstance.monitor(101);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var stackHandle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
+            var local0 = simulatorInstance.monitor(100, 0);
+            var local1 = simulatorInstance.monitor(101, 0);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -114,13 +116,13 @@ namespace Tests.Memory
             Console.WriteLine("_____");
             localValues1.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
-            
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10 }));
+
+            Assert.IsTrue(stackValues.SequenceEqual(new List<short>() { 0, 2, 4, 6, 10 }));
         }
 
         //TODO these argument tests are flawed -
         //currently argument and local point to the same baseaddress...
-        
+
         string pushAndPop_LocalAndArgument =
                @"push constant 2
          push constant 4
@@ -143,21 +145,22 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].StartOnPage;
 
-            var stackHandle = simulatorInstance.monitor(33040);
-           var local0 = simulatorInstance.monitor(100);
-            var local1 = simulatorInstance.monitor(101);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var stackHandle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
+            var local0 = simulatorInstance.monitor(100, 0);
+            var local1 = simulatorInstance.monitor(101, 0);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -171,7 +174,7 @@ namespace Tests.Memory
             localValues1.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10, 10 }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<short>() { 0, 2, 4, 6, 10, 10 }));
         }
 
         string pushAndPop_Argument =
@@ -194,21 +197,22 @@ namespace Tests.Memory
             var translator = new vmtranslator.vmtranslator(path);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
-            
+
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt16(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (short)MemoryMap[MemoryMapKeys.user_code].StartOnPage;
 
-            var stackHandle = simulatorInstance.monitor(33040);
-            var argument0 = simulatorInstance.monitor(200);
-            var argument1 = simulatorInstance.monitor(201);
+            var stackinfo = MemoryMap[MemoryMapKeys.stack];
+            var stackHandle = simulatorInstance.monitor((short)stackinfo.StartOnPage, stackinfo.Page);
+            var argument0 = simulatorInstance.monitor(200, 0);
+            var argument1 = simulatorInstance.monitor(201, 0);
 
             simulatorInstance.runSimulation();
             var stackValues = stackHandle.getValues();
@@ -222,7 +226,7 @@ namespace Tests.Memory
             argument1values.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10 }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<short>() { 0, 2, 4, 6, 10 }));
         }
     }
 }
