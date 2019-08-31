@@ -75,7 +75,7 @@ START";
             System.IO.File.WriteAllText(path, testVGAOutputProgram);
             var assemblerInst = new assembler.Assembler(path);
             var assembledResult = assemblerInst.ConvertToBinary();
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             //lets convert our final assembled program back to assembly instructions so we can view it.
             //dissasembly)
@@ -89,7 +89,7 @@ START";
             //TODO use cancellation token here.
             simulationThread = Task.Run(() =>
               {
-                  simulatorInstance.ProgramCounter = (ushort)assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1;
+                  simulatorInstance.ProgramCounter = (int)assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].AbsoluteStart;
                   simulatorInstance.runSimulation();
               });
 
@@ -230,7 +230,7 @@ START";
                 ImGui.Text("Expanded Assembly");
                 ImGui.ListBox("", ref currentProgramLine, expandedCode, expandedCode.Length, expandedCode.Length);
                 //TODO I think this is going to be offset incorrectly based on how many labels were removed during expansion...
-                currentProgramLine = simulatorInstance.ProgramCounter -assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].Item1 ;
+                currentProgramLine = simulatorInstance.ProgramCounter -assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.user_code].AbsoluteStart ;
 
                 int[] data = simulatorInstance.mainMemory.Select(x => convertShortFormatToFullColor(Convert.ToInt32(x).ToBinary())).ToArray();
                 var texture = textureMap[CPUframeBufferTextureId];
