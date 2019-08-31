@@ -39,11 +39,11 @@ namespace Tests.Memory
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup monitors:
             var stackHandle = simulatorInstance.monitor(33040);
@@ -63,9 +63,9 @@ namespace Tests.Memory
             Console.WriteLine("_____");
 
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, }));
-            Assert.IsTrue(localValues0.SequenceEqual(new List<ushort>() { 0, 10, 4 }));
-            Assert.IsTrue(localValues1.SequenceEqual(new List<ushort>() { 0, 2, }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<int>() { 0, 2, }));
+            Assert.IsTrue(localValues0.SequenceEqual(new List<int>() { 0, 10, 4 }));
+            Assert.IsTrue(localValues1.SequenceEqual(new List<int>() { 0, 2, }));
         }
 
         string pushAndPop_Local =
@@ -94,11 +94,11 @@ namespace Tests.Memory
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             var stackHandle = simulatorInstance.monitor(33040);
             var local0 = simulatorInstance.monitor(100);
@@ -115,7 +115,7 @@ namespace Tests.Memory
             localValues1.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
             
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10 }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<int>() { 0, 2, 4, 6, 10 }));
         }
 
         //TODO these argument tests are flawed -
@@ -149,11 +149,11 @@ namespace Tests.Memory
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             var stackHandle = simulatorInstance.monitor(33040);
            var local0 = simulatorInstance.monitor(100);
@@ -171,7 +171,7 @@ namespace Tests.Memory
             localValues1.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10, 10 }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<int>() { 0, 2, 4, 6, 10, 10 }));
         }
 
         string pushAndPop_Argument =
@@ -200,11 +200,11 @@ namespace Tests.Memory
             var assemblerInstance = new assembler.Assembler(path);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
-            var binaryProgram = assembledResult.Select(x => Convert.ToUInt16(x, 16));
+            var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
-            simulatorInstance.ProgramCounter = (ushort)MemoryMap[MemoryMapKeys.user_code].Item1;
+            simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             var stackHandle = simulatorInstance.monitor(33040);
             var argument0 = simulatorInstance.monitor(200);
@@ -222,7 +222,7 @@ namespace Tests.Memory
             argument1values.ForEach(x => Console.WriteLine(x));
             Console.WriteLine("_____");
 
-            Assert.IsTrue(stackValues.SequenceEqual(new List<ushort>() { 0, 2, 4, 6, 10 }));
+            Assert.IsTrue(stackValues.SequenceEqual(new List<int>() { 0, 2, 4, 6, 10 }));
         }
     }
 }
