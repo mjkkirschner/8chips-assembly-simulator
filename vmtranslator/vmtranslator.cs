@@ -94,8 +94,8 @@ namespace vmtranslator
 
             //set the pointers to the right values
             //SP = 33040
-            this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].Item1}");
-            this.Output.Add($"{pointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.pointers_registers].Item1 + 3 }");
+            this.Output.Add($"{stackPointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.stack].AbsoluteStart}");
+            this.Output.Add($"{pointer_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.pointers_registers].AbsoluteStart + 3 }");
             //TODO for the sake of testing lets set some base addresses that are non zero.
             this.Output.Add($"{local_symbol} = {100}");
             this.Output.Add($"{arg_symbol} = {200}");
@@ -105,7 +105,7 @@ namespace vmtranslator
             //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
             //TODO... do that somewhere once we start implementing functions?
             //I assume we put this on the heap?
-            //this.Output.Add($"{local_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.heap].Item1}");
+            //this.Output.Add($"{local_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.heap].AbsoluteStart}");
         }
 
         public vmIL2ASMWriter()
@@ -137,8 +137,8 @@ namespace vmtranslator
 
         private string[] generateIncrement(string symbol, string offset = "1", bool updateSymbol = true)
         {
-            ushort result;
-            if (!ushort.TryParse(offset, out result))
+            int result;
+            if (!int.TryParse(offset, out result))
             {
                 throw new Exception("offset was not a valid int");
             }
@@ -300,6 +300,25 @@ namespace vmtranslator
                 this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 this.Output.Add(stackPointer_symbol);
                 this.Output.Add(assembler.CommandType.SUBTRACT.ToString());
+                this.Output.Add(temp_symbol);
+                //now store the result in SP
+                this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                //and increment
+                this.Output.AddRange(generateIncrement(stackPointer_symbol));
+            }
+
+            else if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.neg)
+            {
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.AddRange(generateMoveAtoTemp());
+
+                this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                this.Output.Add("-1");
+             
+                this.Output.Add(assembler.CommandType.MULTIPLY.ToString());
                 this.Output.Add(temp_symbol);
                 //now store the result in SP
                 this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());

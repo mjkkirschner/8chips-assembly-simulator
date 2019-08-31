@@ -42,7 +42,7 @@ namespace assembler
         MULTIPLY,
         DIVIDE,
         MODULO,
-
+        
         //adding logical ops
         //TODO need to add these to map of increments - .... should add a validator step.
         AND,
@@ -53,9 +53,18 @@ namespace assembler
         ASSEM_LABEL = -1,
         ASSEM_STORE_MACRO = -2,
         ASSEM_DEFINE = -3,
+    }
 
+    public struct MemoryMapSegment
+    {
+        public int AbsoluteStart { get; private set; }
+        public int AbsoluteEnd { get; private set; }
 
-
+        public MemoryMapSegment(int absStart, int absEnd)
+        {
+            this.AbsoluteStart = absStart;
+            this.AbsoluteEnd = absEnd;
+        }
 
 
     }
@@ -68,14 +77,14 @@ namespace assembler
 
         public Dictionary<string, int> symbolTable = new Dictionary<string, int>();
 
-        public static Dictionary<MemoryMapKeys, Tuple<int, int>> MemoryMap = new Dictionary<MemoryMapKeys, Tuple<int, int>>{
-            {MemoryMapKeys.bootloader,Tuple.Create(0,255)},
-             {MemoryMapKeys.pointers_registers,Tuple.Create(256,271)},
-              {MemoryMapKeys.symbols,Tuple.Create(272,527)},
-                {MemoryMapKeys.user_code,Tuple.Create(528,33039)},
-                 {MemoryMapKeys.stack,Tuple.Create(33040,34839)},
-                   {MemoryMapKeys.heap,Tuple.Create(34840,48839)},
-                    {MemoryMapKeys.frame_buffer,Tuple.Create(48840,65223)},
+        public static Dictionary<MemoryMapKeys, MemoryMapSegment> MemoryMap = new Dictionary<MemoryMapKeys, MemoryMapSegment>{
+            {MemoryMapKeys.bootloader,new MemoryMapSegment(0,255)},
+             {MemoryMapKeys.pointers_registers,new MemoryMapSegment(256,271)},
+              {MemoryMapKeys.symbols,new MemoryMapSegment(272,527)},
+                {MemoryMapKeys.user_code,new MemoryMapSegment(528,33039)},
+                 {MemoryMapKeys.stack,new MemoryMapSegment(33040,34839)},
+                   {MemoryMapKeys.heap,new MemoryMapSegment(34840,48839)},
+                    {MemoryMapKeys.frame_buffer,new MemoryMapSegment(48840,65223)},
 
         };
         private int currentSymbolTableOffset = 0;
@@ -175,7 +184,7 @@ namespace assembler
                 //if we see a label, add a symbol for the address it points to.
                 else if (parser.CommandType() == CommandType.ASSEM_LABEL)
                 {
-                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].Item1;
+                    var memoryAddressInUserCodeSpace = outputLineCounter + MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
                     if (this.symbolTable.ContainsKey(parser.LabelText()))
                     {
@@ -243,8 +252,8 @@ namespace assembler
                         //transfer time will just increase.
                         else
                         {
-                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].Item1 + this.currentSymbolTableOffset;
-                            if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].Item2)
+                            var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].AbsoluteStart + this.currentSymbolTableOffset;
+                            if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].AbsoluteEnd)
                             {
                                 throw new Exception(" symboltable has more variables than allocated memory space for symbols");
                             }
