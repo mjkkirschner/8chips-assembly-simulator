@@ -45,11 +45,13 @@ add";
             System.IO.File.WriteAllLines(path, assembly);
 
             var assemblerInstance = new assembler.Assembler(path);
+            //assemblerInstance.logger.enabled = true;
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
+            simulatorInstance.logger.enabled = true;
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
@@ -58,15 +60,6 @@ add";
             //simulatorInstance.printMemory(0);
 
             Assert.AreEqual(1110, simulatorInstance.mainMemory[33040]);
-
-
-            //pointers are set correctly
-            Assert.AreEqual(3030, simulatorInstance.mainMemory[259]);
-            Assert.AreEqual(3040, simulatorInstance.mainMemory[260]);
-            //values at pointers are correct.
-            Assert.AreEqual(32, simulatorInstance.mainMemory[3032]);
-            Assert.AreEqual(46, simulatorInstance.mainMemory[3046]);
-
         }
     }
 }

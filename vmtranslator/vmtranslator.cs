@@ -186,7 +186,7 @@ namespace vmtranslator
                 output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
                 output.Add(stackPointer_symbol);
                 output.Add(assembler.CommandType.STOREA.ToString());
-                output.Add($"{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{IndexOperand}");
+                output.Add($"STATIC{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{IndexOperand}");
             }
             else
             {
@@ -219,7 +219,7 @@ namespace vmtranslator
             if (segment == vmMemSegments._static)
             {
                 output.Add(assembler.CommandType.LOADA.ToString());
-                output.Add($"{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{index}");
+                output.Add($"STATIC{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{index}");
             }
             else
             {
@@ -317,7 +317,7 @@ namespace vmtranslator
 
                 this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
                 this.Output.Add("-1");
-             
+
                 this.Output.Add(assembler.CommandType.MULTIPLY.ToString());
                 this.Output.Add(temp_symbol);
                 //now store the result in SP
@@ -551,7 +551,7 @@ namespace vmtranslator
                 }
                 else if (segment == vmILParser.vmMemSegments._static)
                 {
-
+                    this.Output.AddRange(generatePushToStackFromSegment(vmMemSegments._static, indexORValue, instructionData));
                 }
 
 
@@ -590,6 +590,10 @@ namespace vmtranslator
                 else if (segment == vmILParser.vmMemSegments.that)
                 {
                     this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments.that, indexORValue, instructionData));
+                }
+                else if (segment == vmILParser.vmMemSegments._static)
+                {
+                    this.Output.AddRange(generatePopFromStackToSegment(vmMemSegments._static, indexORValue, instructionData));
                 }
 
             }
