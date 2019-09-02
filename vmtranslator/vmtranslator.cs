@@ -600,6 +600,41 @@ namespace vmtranslator
 
         }
 
+        private void handleControlFlow(InstructionData instructionData)
+        {
+            if (instructionData.CommandType == vmCommmandType.LABEL)
+            {
+                var labelString = instructionData.Operands.FirstOrDefault();
+                this.Output.Add($"({labelString})");
+            }
+            if (instructionData.CommandType == vmCommmandType.GOTO)
+            {
+                var labelToJumpTo = instructionData.Operands.FirstOrDefault();
+                this.Output.Add(assembler.CommandType.JUMP.ToString());
+                this.Output.Add(labelToJumpTo);
+            }
+            if (instructionData.CommandType == vmCommmandType.IF)
+            {
+                var blockID = Guid.NewGuid().ToString("N");
+
+                var labelToJumpTo = instructionData.Operands.FirstOrDefault();
+                // we only do the jump if whatever is at the top of the stack is not equal to 0.
+                // so load a with stack value, load b with 0, then do a jumpIfNotEqual
+                this.Output.AddRange(generateDecrement(stackPointer_symbol));
+                this.Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                this.Output.Add(stackPointer_symbol);
+                this.Output.Add(assembler.CommandType.LOADBIMMEDIATE.ToString());
+                this.Output.Add("0");
+                this.Output.Add(assembler.CommandType.UPDATEFLAGS.ToString());
+
+                this.Output.Add(assembler.CommandType.JUMPIFEQUAL.ToString());
+                this.Output.Add($"FALSE{blockID}");
+
+                this.Output.Add(assembler.CommandType.JUMP.ToString());
+                this.Output.Add(labelToJumpTo);
+                this.Output.Add($"(FALSE{blockID})");
+            }
+        }
 
         public void handleCommand(InstructionData instructionData)
         {
@@ -616,6 +651,22 @@ namespace vmtranslator
                 case vmILParser.vmCommmandType.POP:
                     handlePushPop(instructionData);
                     break;
+
+                case vmILParser.vmCommmandType.LABEL:
+                    {
+                        handleControlFlow(instructionData);
+                        break;
+                    }
+                case vmILParser.vmCommmandType.IF:
+                    {
+                        handleControlFlow(instructionData);
+                        break;
+                    }
+                case vmILParser.vmCommmandType.GOTO:
+                    {
+                        handleControlFlow(instructionData);
+                        break;
+                    }
 
                 default:
                     throw new Exception("unkown command");
@@ -639,7 +690,13 @@ namespace vmtranslator
             this.filePath = filePath;
             this.writer = writer;
             var data = File.ReadAllText(this.filePath);
-            this.allInputLines = data.Split(Environment.NewLine).Select(x => x.Trim()).ToArray();
+            //get all lines
+            var allLines = data.Split(Environment.NewLine).Select(x => x.Trim());
+            var withoutFullLineComments = allLines.Where(x => !x.StartsWith(@"//"));
+            //each line might also contain a comment somewhere in it - lets remove those as well.
+            var noComments = withoutFullLineComments.Select(x => x.Split(@"//").FirstOrDefault());
+
+            this.allInputLines = noComments.ToArray();
         }
 
 
@@ -777,6 +834,24 @@ namespace vmtranslator
                     this.currentVMFunction = this.Operands().First();
                 }
                 return new InstructionData(cmdType, parsedEnum, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+
+            //if we still could not parse the command, it might be control or function command.
+
+            if (firstItemInLine.ToLower().StartsWith("if-goto"))
+            {
+                cmdType = vmCommmandType.IF;
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+            if (firstItemInLine.ToLower().StartsWith("label"))
+            {
+                cmdType = vmCommmandType.LABEL;
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+            if (firstItemInLine.ToLower().StartsWith("goto"))
+            {
+                cmdType = vmCommmandType.GOTO;
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
             }
 
 

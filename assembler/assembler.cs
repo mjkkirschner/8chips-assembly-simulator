@@ -5,6 +5,7 @@ using System.IO;
 using assembler;
 using System.Linq;
 using core;
+using System.Diagnostics;
 
 namespace assembler
 {
