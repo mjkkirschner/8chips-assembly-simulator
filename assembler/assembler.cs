@@ -256,7 +256,7 @@ namespace assembler
                             var symbolTableCurrentLocation = MemoryMap[MemoryMapKeys.symbols].AbsoluteStart + this.currentSymbolTableOffset;
                             if (symbolTableCurrentLocation > MemoryMap[MemoryMapKeys.symbols].AbsoluteEnd)
                             {
-                                throw new Exception(" symboltable has more variables than allocated memory space for symbols");
+                                throw new Exception(" symbol table has more variables than allocated memory space for symbols");
                             }
                             logger.log($"adding symbol, {symbol} at line: {symbolTableCurrentLocation}");
                             this.symbolTable[symbol] = symbolTableCurrentLocation;

@@ -113,26 +113,36 @@ namespace vmtranslator
             this.setupBaseRegisterSymbols();
         }
 
-        private string[] generateDecrement(string symbol)
+        private string[] generateDecrement(string symbol, string offset = "1", bool updateSymbol = true)
         {
-            return new string[]{
+            int result;
+            if (!int.TryParse(offset, out result))
+            {
+                throw new Exception("offset was not a valid int");
+            }
+
+            var output = new List<string>{
                 //load the symbol into A
                 assembler.CommandType.LOADA.ToString(),
                 symbol,
                 //load 1 into b
                 assembler.CommandType.LOADBIMMEDIATE.ToString(),
-                "1",
+                offset,
                 //store B at a location we can reference...
                 assembler.CommandType.STOREB.ToString(),
-                temp_symbol+ " + 1",
+                temp_symbol+" + 1",
                 //subtract the value at that mem address from A
                 assembler.CommandType.SUBTRACT.ToString(),
-                temp_symbol+ " + 1",
-                //store result in original symbol
-                assembler.CommandType.STOREA.ToString(),
-                symbol
-
+                temp_symbol+" + 1",
             };
+
+            if (updateSymbol)
+            {
+                //store result in original symbol
+                output.Add(assembler.CommandType.STOREA.ToString());
+                output.Add(symbol);
+            }
+            return output.ToArray();
         }
 
         private string[] generateIncrement(string symbol, string offset = "1", bool updateSymbol = true)
@@ -204,6 +214,17 @@ namespace vmtranslator
             return output.ToArray();
         }
 
+        private string[] generatePushToStackFromSymbol(string symbol, InstructionData currentVMinstruction)
+        {
+            var output = new List<string>();
+            output.Add(assembler.CommandType.LOADA.ToString());
+            output.Add(symbol);
+            output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+            output.Add(stackPointer_symbol);
+            output.AddRange(generateIncrement(stackPointer_symbol));
+            return output.ToArray();
+        }
+
         private string[] generatePushToStackFromSegment(vmILParser.vmMemSegments segment, string index, InstructionData currentVMinstruction)
         {
             //if we are writing from local to stack - we need to read from memory at the base address
@@ -220,6 +241,10 @@ namespace vmtranslator
             {
                 output.Add(assembler.CommandType.LOADA.ToString());
                 output.Add($"STATIC{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{index}");
+            }
+            else if (segment == vmMemSegments.constant)
+            {
+                throw new NotImplementedException();
             }
             else
             {
@@ -600,6 +625,65 @@ namespace vmtranslator
 
         }
 
+        private void handleFunctionCallingCommand(InstructionData instructionData)
+        {
+            //function funcName 5 //number of arguments to get from stack.
+            if (instructionData.CommandType == vmCommmandType.FUNCTION)
+            {
+                var funcName = instructionData.Operands[0];
+                var argNum = instructionData.Operands[1];
+
+                //label
+                Output.Add($"({funcName})");
+                //allocate some memory for local arguments
+                for (var i = 0; i < int.Parse(argNum); i++)
+                {
+                    this.Output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                    this.Output.Add("0");
+                    this.Output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+                    this.Output.Add(stackPointer_symbol);
+                    this.Output.AddRange(generateIncrement(stackPointer_symbol));
+                }
+            }
+
+            if (instructionData.CommandType == vmCommmandType.CALL)
+            {
+                var funcName = instructionData.Operands[0];
+                var argNum = instructionData.Operands[1];
+                var returnaddress =  "RETURN"+Guid.NewGuid().ToString("N");
+
+                //push return address
+                Output.AddRange(generatePushToStackFromSymbol(returnaddress, instructionData));
+                //push LCL
+                Output.AddRange(generatePushToStackFromSymbol(local_symbol, instructionData));
+                //push ARG
+                Output.AddRange(generatePushToStackFromSymbol(arg_symbol, instructionData));
+                //push THIS
+                Output.AddRange(generatePushToStackFromSymbol(this_symbol, instructionData));
+                //push THAT
+                Output.AddRange(generatePushToStackFromSymbol(that_symbol, instructionData));
+
+                //set ARG to SP-n-5
+                //first calculate the new address and store in A.
+                Output.AddRange(generateDecrement(stackPointer_symbol, (int.Parse(argNum) + 5).ToString(), false));
+                //then store it in ARG.
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(arg_symbol);
+
+                //set LCL to new SP.
+                Output.Add(assembler.CommandType.LOADA.ToString());
+                Output.Add(stackPointer_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(local_symbol);
+                //execute function.
+                Output.Add(assembler.CommandType.JUMP.ToString());
+                Output.Add(funcName);
+                //return label
+                Output.Add($"({returnaddress})");
+
+            }
+        }
+
         private void handleControlFlow(InstructionData instructionData)
         {
             if (instructionData.CommandType == vmCommmandType.LABEL)
@@ -668,8 +752,18 @@ namespace vmtranslator
                         break;
                     }
 
+                case vmILParser.vmCommmandType.CALL:
+                    handleFunctionCallingCommand(instructionData);
+                    break;
+                case vmILParser.vmCommmandType.RETURN:
+                    handleFunctionCallingCommand(instructionData);
+                    break;
+                case vmILParser.vmCommmandType.FUNCTION:
+                    handleFunctionCallingCommand(instructionData);
+                    break;
+
                 default:
-                    throw new Exception("unkown command");
+                    throw new Exception($"unkown command:{instructionData.CommandType}");
             }
 
         }
@@ -695,8 +789,8 @@ namespace vmtranslator
             var withoutFullLineComments = allLines.Where(x => !x.StartsWith(@"//"));
             //each line might also contain a comment somewhere in it - lets remove those as well.
             var noComments = withoutFullLineComments.Select(x => x.Split(@"//").FirstOrDefault());
-
-            this.allInputLines = noComments.ToArray();
+            var noEmptyLines = noComments.Where(x => !(string.IsNullOrEmpty(x)));
+            this.allInputLines = noEmptyLines.ToArray();
         }
 
 
@@ -825,18 +919,6 @@ namespace vmtranslator
             }
 
             //not memory access or arithmetic, lets try other command types
-            parseResult = System.Enum.TryParse(typeof(vmCommmandType), firstItemInLine, out parsedEnum);
-            if (parseResult && parsedEnum != null)
-            {
-                cmdType = (vmCommmandType)parsedEnum;
-                if (cmdType == vmCommmandType.FUNCTION)
-                {
-                    this.currentVMFunction = this.Operands().First();
-                }
-                return new InstructionData(cmdType, parsedEnum, this.Operands(), this.filePath, this.currentVMFunction);
-            }
-
-            //if we still could not parse the command, it might be control or function command.
 
             if (firstItemInLine.ToLower().StartsWith("if-goto"))
             {
@@ -853,6 +935,26 @@ namespace vmtranslator
                 cmdType = vmCommmandType.GOTO;
                 return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
             }
+
+            if (firstItemInLine.ToLower().StartsWith("function"))
+            {
+                cmdType = vmCommmandType.FUNCTION;
+                this.currentVMFunction = this.Operands().First();
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+
+            if (firstItemInLine.ToLower().StartsWith("return"))
+            {
+                cmdType = vmCommmandType.RETURN;
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+
+            if (firstItemInLine.ToLower().StartsWith("call"))
+            {
+                cmdType = vmCommmandType.CALL;
+                return new InstructionData(cmdType, null, this.Operands(), this.filePath, this.currentVMFunction);
+            }
+
 
 
             throw new Exception($"could not parse current line to command: {this.currentLine},{this.currentLineIndex} ");

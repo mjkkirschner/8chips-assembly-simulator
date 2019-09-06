@@ -27,7 +27,7 @@ namespace simulatorUI
         private static Task simulationThread;
         private static uint width = 256;
         private static uint height = 256;
-        private static int cpuSpeed = 100000;
+        private static int cpuSpeed = simulatorInstance.instructionBundleSize;
         private static bool halted = false;
 
         private static string[] expandedCode;
