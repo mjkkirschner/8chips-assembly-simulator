@@ -27,6 +27,7 @@ namespace assembler
         STOREA,
         LOADAIMMEDIATE,
         JUMP,
+        JUMPTOPOINTER,
         JUMPIFEQUAL,
         JUMPIFLESS,
         JUMPIFGREATER,
@@ -286,7 +287,7 @@ namespace assembler
             this.AddLabelsToSymbolTable(expandedCode);
             //phase 3: do the actual conversion from command strings and dec numbers operands to hex.
             var outputLines = this.ConvertOpCodes(expandedCode);
-            verifySymboltable();
+            //verifySymboltable();
             return outputLines;
         }
 
@@ -376,6 +377,7 @@ namespace assembler
                 [assembler.CommandType.STOREA] = 2,
                 [assembler.CommandType.LOADAIMMEDIATE] = 2,
                 [assembler.CommandType.JUMP] = 2,
+                 [assembler.CommandType.JUMPTOPOINTER] = 2,
                 [assembler.CommandType.JUMPIFEQUAL] = 2,
                 [assembler.CommandType.JUMPIFLESS] = 2,
                 [assembler.CommandType.JUMPIFGREATER] = 2,

@@ -45,6 +45,7 @@ valid instructions for the assembler:
 - STOREA :
 - LOADAIMMEDIATE :
 - JUMP :
+- JUMPTOPOINTER :
 - JUMPIFEQUAL :
 - JUMPIFLESS :
 - JUMPIFGREATER :

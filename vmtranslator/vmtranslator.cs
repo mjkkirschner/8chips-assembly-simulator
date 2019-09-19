@@ -99,13 +99,38 @@ namespace vmtranslator
             //TODO for the sake of testing lets set some base addresses that are non zero.
             this.Output.Add($"{local_symbol} = {100}");
             this.Output.Add($"{arg_symbol} = {200}");
-            //
+
             this.Output.Add($"{this_symbol} = {pointer_symbol} + 0 ");
             this.Output.Add($"{that_symbol} = {pointer_symbol} + 1 ");
-            //OTHER POINTERS NEED TO BE RESET EVERYTIME A VM FUNCTION IS ENTERED....
-            //TODO... do that somewhere once we start implementing functions?
-            //I assume we put this on the heap?
-            //this.Output.Add($"{local_symbol} = {assembler.Assembler.MemoryMap[assembler.Assembler.MemoryMapKeys.heap].AbsoluteStart}");
+
+            //call sys.init and then call main.
+            var callInit = new InstructionData(vmCommmandType.CALL, null, new string[] { "Sys.init", "0" }, "Sys.init", "Sys.init");
+            handleFunctionCallingCommand(callInit);
+
+
+            Output.Add(assembler.CommandType.HALT.ToString());
+
+
+            var sysInitDefine = new InstructionData(vmCommmandType.FUNCTION, null, new string[] { "Sys.init", "0" }, "Sys.init", "Sys.init");
+            handleFunctionCallingCommand(sysInitDefine);
+
+            //call the main.main func which is our real entry point.
+            var callMain = new InstructionData(vmCommmandType.CALL, null, new string[] { "main.main", "0" }, "main.main", "main.main");
+            handleFunctionCallingCommand(callMain);
+
+            //TODO as part of any VM function we need to push some return value to the stack 
+            //for now, lets just push the result of main so we can assert our test was successfull.
+
+            Output.AddRange(generateDecrement(stackPointer_symbol, "1", false));
+            Output.AddRange(generateMoveAtoTemp());
+            Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+            Output.Add(temp_symbol);
+            Output.Add(assembler.CommandType.STOREA.ToString());
+            Output.Add(temp_symbol);
+            Output.AddRange(this.generatePushToStackFromSymbol(temp_symbol, null));
+
+            var returnFromSysInit = new InstructionData(vmCommmandType.RETURN, null, new string[] { }, "Sys.init", "Sys.init");
+            handleFunctionCallingCommand(returnFromSysInit);
         }
 
         public vmIL2ASMWriter()
@@ -224,6 +249,28 @@ namespace vmtranslator
             output.AddRange(generateIncrement(stackPointer_symbol));
             return output.ToArray();
         }
+        private string[] generatePushToStackFromSymbolImmediate(string symbol, InstructionData currentVMinstruction)
+        {
+            var output = new List<string>();
+            output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+            output.Add(symbol);
+            output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+            output.Add(stackPointer_symbol);
+            output.AddRange(generateIncrement(stackPointer_symbol));
+            return output.ToArray();
+        }
+
+        private string[] generatePopFromStackToSymbol(string symbol, InstructionData currentVMinstruction)
+        {
+            var output = new List<string>();
+            output.AddRange(generateDecrement(stackPointer_symbol));
+            output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+            output.Add(stackPointer_symbol);
+            //TODO...treat symbol as pointer as argument to this func?
+            output.Add(assembler.CommandType.STOREAATPOINTER.ToString());
+            output.Add(symbol);
+            return output.ToArray();
+        }
 
         private string[] generatePushToStackFromSegment(vmILParser.vmMemSegments segment, string index, InstructionData currentVMinstruction)
         {
@@ -242,9 +289,11 @@ namespace vmtranslator
                 output.Add(assembler.CommandType.LOADA.ToString());
                 output.Add($"STATIC{currentVMinstruction.VMFilePath}.{currentVMinstruction.VMFunction}.{index}");
             }
+            //if constant, then just load the constant specified into A.
             else if (segment == vmMemSegments.constant)
             {
-                throw new NotImplementedException();
+                output.Add(assembler.CommandType.LOADAIMMEDIATE.ToString());
+                output.Add(index);
             }
             else
             {
@@ -295,6 +344,7 @@ namespace vmtranslator
 
             vmILParser.vmArithmetic_Logic_Instructions subCommand = (vmILParser.vmArithmetic_Logic_Instructions)instructionData.CommmandObject;
             //ADD
+            this.Output.Add("//handleArithmeticCommand");
             if (subCommand == vmILParser.vmArithmetic_Logic_Instructions.add)
             {
                 this.Output.AddRange(generateDecrement(stackPointer_symbol));
@@ -534,7 +584,7 @@ namespace vmtranslator
 
             if (instructionData.CommandType == vmILParser.vmCommmandType.PUSH)
             {
-
+                this.Output.Add("//handle PUSH");
                 //memory instructions look like
                 //pop segment index
                 var segment = parseVmSegment(instructionData.Operands.FirstOrDefault());
@@ -588,6 +638,7 @@ namespace vmtranslator
 
             else if (instructionData.CommandType == vmILParser.vmCommmandType.POP)
             {
+                this.Output.Add("//handle POP");
                 var segment = parseVmSegment(instructionData.Operands.FirstOrDefault());
                 var indexORValue = instructionData.Operands.Skip(1).FirstOrDefault();
 
@@ -627,9 +678,11 @@ namespace vmtranslator
 
         private void handleFunctionCallingCommand(InstructionData instructionData)
         {
+
             //function funcName 5 //number of arguments to get from stack.
             if (instructionData.CommandType == vmCommmandType.FUNCTION)
             {
+                this.Output.Add("//handle FUNCTION DEF");
                 var funcName = instructionData.Operands[0];
                 var argNum = instructionData.Operands[1];
 
@@ -648,12 +701,13 @@ namespace vmtranslator
 
             if (instructionData.CommandType == vmCommmandType.CALL)
             {
+                this.Output.Add("//handle CALL");
                 var funcName = instructionData.Operands[0];
                 var argNum = instructionData.Operands[1];
-                var returnaddress =  "RETURN"+Guid.NewGuid().ToString("N");
+                var returnaddress = "RETURN" + Guid.NewGuid().ToString("N");
 
                 //push return address
-                Output.AddRange(generatePushToStackFromSymbol(returnaddress, instructionData));
+                Output.AddRange(generatePushToStackFromSymbolImmediate(returnaddress, instructionData));
                 //push LCL
                 Output.AddRange(generatePushToStackFromSymbol(local_symbol, instructionData));
                 //push ARG
@@ -682,23 +736,87 @@ namespace vmtranslator
                 Output.Add($"({returnaddress})");
 
             }
+
+            if (instructionData.CommandType == vmCommmandType.RETURN)
+            {
+                Output.Add("//handle RETURN");
+
+                Output.Add(assembler.CommandType.LOADA.ToString());
+                Output.Add(local_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add("FRAME");
+
+
+                //frame currently points to somewhere on the stack -
+                //lets get the real value at the frame pointer and save to ret.
+                Output.AddRange(generateDecrement("FRAME", "5", false));
+                Output.AddRange(generateMoveAtoTemp());
+                Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                Output.Add(temp_symbol);
+                //A should now contain a real return address.
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add("RET");
+
+                Output.AddRange(generatePopFromStackToSymbol(arg_symbol, instructionData));
+
+                Output.AddRange(generateIncrement(arg_symbol, "1", false));
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(stackPointer_symbol);
+
+                Output.AddRange(generateDecrement("FRAME", (1).ToString(), false));
+                Output.AddRange(generateMoveAtoTemp());
+                Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                Output.Add(temp_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(that_symbol);
+
+                Output.AddRange(generateDecrement("FRAME", (2).ToString(), false));
+                Output.AddRange(generateMoveAtoTemp());
+                Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                Output.Add(temp_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(this_symbol);
+
+                Output.AddRange(generateDecrement("FRAME", (3).ToString(), false));
+                Output.AddRange(generateMoveAtoTemp());
+                Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                Output.Add(temp_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(arg_symbol);
+
+                Output.AddRange(generateDecrement("FRAME", (4).ToString(), false));
+                Output.AddRange(generateMoveAtoTemp());
+                Output.Add(assembler.CommandType.LOADAATPOINTER.ToString());
+                Output.Add(temp_symbol);
+                Output.Add(assembler.CommandType.STOREA.ToString());
+                Output.Add(local_symbol);
+
+
+                Output.Add(assembler.CommandType.JUMPTOPOINTER.ToString());
+                Output.Add("RET");
+
+
+            }
         }
 
         private void handleControlFlow(InstructionData instructionData)
         {
             if (instructionData.CommandType == vmCommmandType.LABEL)
             {
+                this.Output.Add("//handle VM LABEL");
                 var labelString = instructionData.Operands.FirstOrDefault();
                 this.Output.Add($"({labelString})");
             }
             if (instructionData.CommandType == vmCommmandType.GOTO)
             {
+                this.Output.Add("//handle GOTO");
                 var labelToJumpTo = instructionData.Operands.FirstOrDefault();
                 this.Output.Add(assembler.CommandType.JUMP.ToString());
                 this.Output.Add(labelToJumpTo);
             }
             if (instructionData.CommandType == vmCommmandType.IF)
             {
+                this.Output.Add("//handle IF GOTO");
                 var blockID = Guid.NewGuid().ToString("N");
 
                 var labelToJumpTo = instructionData.Operands.FirstOrDefault();

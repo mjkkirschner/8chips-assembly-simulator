@@ -108,14 +108,14 @@ label END_PROGRAM";
             var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.logger.enabled = true;
+            //simulatorInstance.logger.enabled = true;
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.mainMemory[200] = 3;
 
             simulatorInstance.runSimulation();
-
-            Assert.AreEqual(6, simulatorInstance.mainMemory[33040]);
+             var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(6, sp);
         }
         [Test]
         public void fibSeries()

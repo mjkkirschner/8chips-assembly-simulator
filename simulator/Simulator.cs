@@ -32,7 +32,7 @@ namespace simulator
         public bool HALT = false;
 
         public Dictionary<string, int> Registers = new Dictionary<string, int>();
-        public int instructionBundleSize { get; set; } = 100000;
+        public int instructionBundleSize { get; set; } = 1000;
 
         public Logger logger { get; private set; } = new Logger();
 
@@ -224,6 +224,11 @@ namespace simulator
                 simulator.logger.log($"JUMP: JUMP TO {operands[0]}");
                 simulator.ProgramCounter = operands[0];
             }),
+            [assembler.CommandType.JUMPTOPOINTER] = new Action<eightChipsSimulator, List<int>>((simulator, operands) =>
+           {
+               simulator.logger.log($"JUMPTOPOINTER: JUMP TO {operands[0]} which points to -> {simulator.mainMemory[operands[0]]}");
+               simulator.ProgramCounter = simulator.mainMemory[operands[0]];
+           }),
             [assembler.CommandType.JUMPIFEQUAL] = new Action<eightChipsSimulator, List<int>>((simulator, operands) =>
            {
                incrementCounter(simulator, 2);

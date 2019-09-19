@@ -63,7 +63,8 @@ namespace Tests.Memory
             simulatorInstance.runSimulation();
             //simulatorInstance.printMemory(0);
 
-            Assert.AreEqual(6084, simulatorInstance.mainMemory[33040]);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(6084, sp);
 
             
             //pointers are set correctly

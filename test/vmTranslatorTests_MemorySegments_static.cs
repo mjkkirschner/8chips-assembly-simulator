@@ -51,15 +51,15 @@ add";
             var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.logger.enabled = true;
+            //simulatorInstance.logger.enabled = true;
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
 
             simulatorInstance.runSimulation();
             //simulatorInstance.printMemory(0);
-
-            Assert.AreEqual(1110, simulatorInstance.mainMemory[33040]);
+             var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(1110, sp);
         }
     }
 }

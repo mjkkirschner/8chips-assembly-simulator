@@ -14,9 +14,11 @@ namespace Tests
     {
 
         string simeplAddTestProgram =
-        @"push constant 7
+        @"function main.main 0
+         push constant 7
          push constant 8
-         add";
+         add
+         return";
 
         string multiAddTestProgram =
       @"push constant 7
@@ -143,9 +145,21 @@ not";
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
-            simulatorInstance.runSimulation();
-            //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 15);
+            simulatorInstance.logger.enabled = true;
+
+            assembly.ForEach(x => Console.WriteLine(x));
+            try
+            {
+                simulatorInstance.runSimulation();
+            }
+            catch (Exception e)
+            {
+                simulatorInstance.printMemory(0);
+                throw e;
+            }
+
+
+            Assert.AreEqual(15, simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1]);
 
         }
 
@@ -173,7 +187,8 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], -1);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(sp, -1);
 
         }
         [Test]
@@ -198,8 +213,8 @@ not";
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
 
-            //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 10);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(sp, 10);
 
         }
 
@@ -226,8 +241,8 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
-            //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 110);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(sp, 110);
 
         }
         [Test]
@@ -253,7 +268,7 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(33040 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
@@ -285,8 +300,8 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
-            //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 0);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(simulatorInstance.mainMemory[sp], 0);
 
         }
 
@@ -313,8 +328,8 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             simulatorInstance.runSimulation();
-            //TODO make this lookup the current SP location.
-            Assert.AreEqual(simulatorInstance.mainMemory[33040], 1);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(sp, 1);
 
         }
 
@@ -342,7 +357,7 @@ not";
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(33040 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
@@ -374,7 +389,7 @@ not";
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(33040 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
@@ -406,7 +421,7 @@ not";
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(33040 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
@@ -439,7 +454,7 @@ not";
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
             //setup a monitor
-            var handle = simulatorInstance.monitor(33040);
+            var handle = simulatorInstance.monitor(33040 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
@@ -471,13 +486,13 @@ not";
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
             //setup a monitor
-            var handle = simulatorInstance.monitor(33049);
+            var handle = simulatorInstance.monitor(33049 + 5);
 
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            //simulatorInstance.printMemory(0);
-            Assert.AreEqual(simulatorInstance.mainMemory[33049], -91);
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            Assert.AreEqual(sp, -91);
         }
     }
 }
