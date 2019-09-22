@@ -4,6 +4,7 @@ using NUnit.Framework;
 using System.Linq;
 using static assembler.Assembler;
 using System.Collections.Generic;
+using simulator;
 
 namespace Tests.Memory
 {
@@ -61,24 +62,42 @@ namespace Tests.Memory
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
 
+            var pt1Monitor = new MonitorHandle<int>(3032, simulatorInstance.mainMemory);
+            var pt2Monitor = new MonitorHandle<int>(3046, simulatorInstance.mainMemory);
+            var thismon = new MonitorHandle<int>(259, simulatorInstance.mainMemory);
+            var thatmon = new MonitorHandle<int>(260, simulatorInstance.mainMemory);
 
             simulatorInstance.runSimulation();
             //simulatorInstance.printMemory(0);
 
             var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
-            simulatorInstance.printMemory(0);
+            //simulatorInstance.printMemory(0);
             Assert.AreEqual(6084, sp);
 
+            var pt1values = pt1Monitor.getValues();
+            var pt2values = pt2Monitor.getValues();
+            var thisvalues = thismon.getValues();
+            var thatvalues = thatmon.getValues();
+
+            new List<List<int>>() { pt1values, pt2values, thisvalues, thatvalues }.ForEach(x =>
+            {
+                x.ForEach(y => Console.WriteLine(y));
+                Console.WriteLine("---------------");
+            });
 
             //pointers are set correctly
-            Assert.AreEqual(3030, simulatorInstance.mainMemory[259]);
-            Assert.AreEqual(3040, simulatorInstance.mainMemory[260]);
+            //TODO I am not sure 100% sure these 27x values are correct.
+            Assert.IsTrue(new int[] { 0, 272, 3030, 272, 272 }.SequenceEqual(thisvalues));
+            Assert.IsTrue(new int[] { 0, 273, 3040, 273, 273 }.SequenceEqual(thatvalues));
+            //Assert.AreEqual(3030, simulatorInstance.mainMemory[259]);
+            //Assert.AreEqual(3040, simulatorInstance.mainMemory[260]);
+
+
             //values at pointers are correct.
             //TODO not sure how to check this or what the correct value should be because we set the
             //pointers back when returning - we may want to use monitors for these mem locations instead.
-            Assert.AreEqual(32, simulatorInstance.mainMemory[3032]);
-            Assert.AreEqual(46, simulatorInstance.mainMemory[3046]);
-
+            Assert.IsTrue(new int[] { 0, 32 }.SequenceEqual(pt1values));
+            Assert.IsTrue(new int[] { 0, 46 }.SequenceEqual(pt2values));
         }
     }
 }
