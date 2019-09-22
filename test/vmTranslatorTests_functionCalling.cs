@@ -21,11 +21,13 @@ namespace Tests.Memory
         // Performs a simple calculation and returns the result.
 
         string simpleFunctionDef =
-        @"push constant 10
+        @"function main.main 0
+        push constant 10
         push constant 5
         call SimpleFunction.test 2
-        push constant 0 // nop
-        function SimpleFunction.test 2
+        return
+
+     function SimpleFunction.test 0
             push argument 1
             push argument 0
             add
@@ -44,10 +46,9 @@ namespace Tests.Memory
 
         string sysvm =
                 @"function Sys.init 0
-push constant 4
+push constant 7
 call Main.fibonacci 1   // Compute the 4'th fibonacci element
-label WHILE
-goto WHILE";              // Loop infinitely
+return";
 
 
 
@@ -114,34 +115,43 @@ return";
 
 
 
-        //[Test]
+        [Test]
         public void multiVMFilesTest()
         {
-            var path = Path.GetTempFileName();
-            var path2 = Path.GetTempFileName();
-            System.IO.File.WriteAllText(path, sysvm);
-            System.IO.File.WriteAllText(path, mainvm);
+            var directory = Path.Combine(Path.GetTempPath(), "TEMPVMFILES");
+            System.IO.Directory.CreateDirectory(directory);
+            System.IO.Directory.Delete(directory,true);
+            System.IO.Directory.CreateDirectory(directory);
+            var path1 = Path.Combine(directory, "sys.vm");
+            var path2 = Path.Combine(directory, "main.vm");
+            var outputAssemblyPath = Path.Combine(directory, "out.asm");
+            System.IO.File.WriteAllText(path1, sysvm);
+            System.IO.File.WriteAllText(path2, mainvm);
 
-            var translator = new vmtranslator.vmtranslator(path);
+
+            var translator = new vmtranslator.vmtranslator(directory);
+            //translator.logger.enabled = true;
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
 
-            System.IO.File.WriteAllLines(path, assembly);
+            assembly.Select<string, string>((x, i) => { Console.WriteLine($"{i + (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart}:{x}"); return x; }).ToList();
 
-            var assemblerInstance = new assembler.Assembler(path);
+            System.IO.File.WriteAllLines(outputAssemblyPath, assembly);
+
+            var assemblerInstance = new assembler.Assembler(outputAssemblyPath);
             var assembledResult = assemblerInstance.ConvertToBinary();
 
             var binaryProgram = assembledResult.Select(x => Convert.ToInt32(x, 16));
 
             var simulatorInstance = new simulator.eightChipsSimulator(16, (int)Math.Pow(2, 16));
-            simulatorInstance.logger.enabled = true;
+           // simulatorInstance.logger.enabled = true;
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
-
+            assemblerInstance.symbolTable.ToList().ForEach(kv => Console.WriteLine($"{kv.Key} : {kv.Value}"));
             simulatorInstance.runSimulation();
             //simulatorInstance.printMemory(0);
             //need to check what the SP points to
-            Assert.AreEqual(15, simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1]);
+            Assert.AreEqual(13, simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1]);
         }
 
     }

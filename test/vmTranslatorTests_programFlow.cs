@@ -23,7 +23,9 @@ namespace Tests.Memory
         // script before this code starts running.
 
         string basicLoopTest =
-@"push constant 0    
+
+@"function main.main 1
+push constant 0    
 pop local 0        // initialize sum = 0
 label LOOP_START
 push argument 0    
@@ -36,7 +38,8 @@ sub
 pop argument 0     // counter--
 push argument 0
 if-goto LOOP_START // If counter > 0, goto LOOP_START
-push local 0";
+push local 0
+return";
 
         // This file is part of www.nand2tetris.org
         // and the book "The Elements of Computing Systems"
@@ -49,7 +52,8 @@ push local 0";
         // before this code starts running.
 
         string fibTest =
-        @"push argument 1
+        @"function main.main 0
+        push argument 1
 pop pointer 1           // that = argument[1]
 
 push constant 0
@@ -87,7 +91,8 @@ pop argument 0          // num_of_elements--
 
 goto MAIN_LOOP_START
 
-label END_PROGRAM";
+label END_PROGRAM
+return";
 
 
         [Test]
@@ -96,7 +101,8 @@ label END_PROGRAM";
             var path = Path.GetTempFileName();
             System.IO.File.WriteAllText(path, basicLoopTest);
 
-            var translator = new vmtranslator.vmtranslator(path);
+            var testWriter = new testVMtoASMWriter(new int[1] { 3 });
+            var translator = new vmtranslator.vmtranslator(path, testWriter);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
 
@@ -111,10 +117,9 @@ label END_PROGRAM";
             //simulatorInstance.logger.enabled = true;
             simulatorInstance.setUserCode(binaryProgram.ToArray());
             simulatorInstance.ProgramCounter = (int)MemoryMap[MemoryMapKeys.user_code].AbsoluteStart;
-            simulatorInstance.mainMemory[200] = 3;
 
             simulatorInstance.runSimulation();
-             var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
             Assert.AreEqual(6, sp);
         }
         [Test]
@@ -123,7 +128,8 @@ label END_PROGRAM";
             var path = Path.GetTempFileName();
             System.IO.File.WriteAllText(path, fibTest);
 
-            var translator = new vmtranslator.vmtranslator(path);
+            var testWriter = new testVMtoASMWriter(new int[2] { 7,3000 });
+            var translator = new vmtranslator.vmtranslator(path, testWriter);
             var assembly = translator.TranslateToAssembly().ToList();
             assembly.Add(assembler.CommandType.HALT.ToString());
 

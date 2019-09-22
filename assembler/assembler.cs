@@ -190,7 +190,8 @@ namespace assembler
 
                     if (this.symbolTable.ContainsKey(parser.LabelText()))
                     {
-                        throw new Exception($"Symboltable already contained this label {parser.LabelText()} at line {memoryAddressInUserCodeSpace}");
+                        Console.WriteLine($"WARNING: Symboltable already contained this label {parser.LabelText()} at line {this.symbolTable[parser.LabelText()]}, redefining it to equal:  {memoryAddressInUserCodeSpace}");
+                       // throw new Exception($"Symboltable already contained this label {parser.LabelText()} at line {memoryAddressInUserCodeSpace}");
                     }
 
                     this.symbolTable[parser.LabelText()] = memoryAddressInUserCodeSpace;

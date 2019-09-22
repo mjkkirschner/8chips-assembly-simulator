@@ -133,10 +133,10 @@ START";
             "0x0003",//add
             "0x0110",//refer to increment symbol
             "0x0002",// outA
-            "0x000C",//loadBImmediate
+            "0x000D",//loadBImmediate
             "0x0010", //16
-            "0x000E", //update flags for jump
-            "0x0009", //jump if less (A<B)
+            "0x000F", //update flags for jump
+            "0x000A", //jump if less (A<B)
             "0x0216", //ADD_1 label location in hex
             "0x0007", //JUMP
             "0x0214", //START label location})
@@ -162,27 +162,27 @@ START";
             "0x0002",// outA
             "0x0005", //Store A,
             "0x0111", // pixel index next var space
-            "0x0014", //load A from pointer
+            "0x0015", //load A from pointer
             "0x0111", // pixel index next var space
-            "0x000C",//loadBImmediate
+            "0x000D",//loadBImmediate
             "0x0000", //0
-            "0x000E", //update flags for jump
-            "0x0008", //jump if equal
+            "0x000F", //update flags for jump
+            "0x0009", //jump if equal
             "0x0228", //address 24 color white
             "0x0006",//loadAImmediate
             "0x0000",//0
-            "0x0013", //store a at pointer,
+            "0x0014", //store a at pointer,
             "0x0111", // pixel index next var space
             "0x0007", //JUMP
             "0x022c", //done check (28)
             "0x0006",//loadAImmediate
             "0xFDE8",//65000
-            "0x0013", //store a at pointer,
+            "0x0014", //store a at pointer,
             "0x0111", // pixel index next var space,
-            "0x000C", //loadbimm
+            "0x000D", //loadbimm
             "0xF230", //62000,
-            "0x000E", //update flags for jump
-            "0x0009", //jump if less (A<B)
+            "0x000F", //update flags for jump
+            "0x000A", //jump if less (A<B)
             "0x0216", //add 1 (6)
             "0x0007", //JUMP
             "0x0214" // START (4)
@@ -206,10 +206,10 @@ START";
             "0x0003",//add
             "0x0110",// refer to increment symbol
             "0x0002",// outA
-            "0x000C",//loadBImmediate
+            "0x000D",//loadBImmediate
             "0x0010", //16
-            "0x000E", //update flags for jump
-            "0x0009", //jump if less (A<B)
+            "0x000F", //update flags for jump
+            "0x000A", //jump if less (A<B)
             "0x0216", //ADD_1 label location in hex
             "0x0007", //JUMP
             "0x0214", //START label location})

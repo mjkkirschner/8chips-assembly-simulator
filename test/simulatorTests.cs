@@ -18,9 +18,9 @@ namespace Tests
         public void canHalt()
         {
             var simulator = new simulator.eightChipsSimulator(16, 1000);
-            simulator.mainMemory[0] = 15;
+            simulator.mainMemory[0] = 16;
             simulator.mainMemory[1] = 6;
-            simulator.mainMemory[2] = 20;
+            simulator.mainMemory[2] = 21;
 
             simulator.runSimulation();
             Assert.AreEqual(0, simulator.ARegister);
@@ -36,7 +36,7 @@ namespace Tests
             simulator.mainMemory[2] = 3;
             simulator.mainMemory[3] = 100;
             simulator.mainMemory[4] = 2;
-            simulator.mainMemory[5] = 15;
+            simulator.mainMemory[5] = 16;
 
             simulator.mainMemory[6] = 6;
             simulator.mainMemory[7] = 20;
@@ -56,12 +56,12 @@ namespace Tests
             var simulator = new simulator.eightChipsSimulator(16, 1000);
             simulator.mainMemory[0] = 6;
             simulator.mainMemory[1] = 20;
-            simulator.mainMemory[2] = 14;
+            simulator.mainMemory[2] = 15;
             simulator.mainMemory[3] = 7;
             simulator.mainMemory[4] = 6;
 
             simulator.mainMemory[5] = 2;
-            simulator.mainMemory[6] = 15;
+            simulator.mainMemory[6] = 16;
 
 
             simulator.runSimulation();
@@ -78,18 +78,18 @@ namespace Tests
             simulator.mainMemory[1] = 20;
             simulator.mainMemory[2] = 3;
             simulator.mainMemory[3] = 100;
-            simulator.mainMemory[4] = 12;
+            simulator.mainMemory[4] = 13;
             simulator.mainMemory[5] = 25;
 
-            simulator.mainMemory[6] = 14;
+            simulator.mainMemory[6] = 15;
 
             //conditionally jump to 2 if A < B... if A < 25 keep looping 
-            simulator.mainMemory[7] = 9;
+            simulator.mainMemory[7] = 10;
             simulator.mainMemory[8] = 2;
 
             simulator.mainMemory[9] = 2;
 
-            simulator.mainMemory[10] = 15;
+            simulator.mainMemory[10] = 16;
 
             simulator.mainMemory[100] = 1;
 

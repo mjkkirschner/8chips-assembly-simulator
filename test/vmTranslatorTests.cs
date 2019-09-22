@@ -21,7 +21,8 @@ namespace Tests
          return";
 
         string multiAddTestProgram =
-      @"push constant 7
+      @"function main.main 0
+         push constant 7
          push constant 8
          add
          push constant 1
@@ -29,54 +30,73 @@ namespace Tests
          push constant 100
          add
          push constant 100
-         sub";
+         sub
+         return";
 
         string NegativeSubtractTestProgram =
-               @"push constant 7
+               @"function main.main 0
+                push constant 7
                 push constant 8
-                sub";
+                sub
+                return";
         string SubtractTestProgram =
-     @"push constant 100
+     @"function main.main 0
+                push constant 100
                 push constant 90
-                sub";
+                sub
+                return";
 
         string subAddTestProgram =
-@"push constant 100
+@"function main.main 0
+push constant 100
                 push constant 90
                 sub
                 push constant 100
-                add";
+                add
+                return";
 
         string eqTestProgram1 =
-            @"push constant 100
+            @"function main.main 0
+            push constant 100
                 push constant 90
-            eq";
+            eq
+            return";
 
         string gtTestProgram1 =
-        @"push constant 100
+        @"function main.main 0
+        push constant 100
                 push constant 90
                 gt
-                push constant 2
-                gt";
+                push constant 0
+                gt 
+                return";
 
         string eqTestProgram2 =
-            @"push constant 100
+            @"function main.main 0
+            push constant 100
                 push constant 100
-            eq";
+            eq
+            return";
 
         string ANDtestprogram1 =
-      @"push constant 6
+      @"function main.main 0
+      push constant 6
                 push constant 5
-            and";
+            and
+            return";
 
         string ORtestprogram1 =
-@"push constant 6
+@"function main.main 0
+push constant 6
                 push constant 5
-            or";
+            or
+            return";
 
         string NOTtestprogram1 =
- @"push constant 1
-            not";
+ @"function main.main 0
+ push constant 1
+            not
+            return";
 
         // This code is part of www.nand2tetris.org
         // and the book "The Elements of Computing Systems"
@@ -86,7 +106,8 @@ namespace Tests
         // Executes a sequence of arithmetic and logical operations
         // on the stack. 
         string complexStack =
-        @"push constant 17
+        @"function main.main 0
+        push constant 17
 push constant 17
 eq
 push constant 17
@@ -123,7 +144,8 @@ neg
 and
 push constant 82
 or
-not";
+not
+return";
 
         [Test]
         public void simpleAddTest()
@@ -273,7 +295,7 @@ not";
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 7, 15, 16, 116, 16 }));
+            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0,725, 16 }));
 
         }
 
@@ -362,7 +384,7 @@ not";
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 100, 1, 0 }));
+            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 725, 1}));
         }
 
         [Test]
@@ -394,7 +416,7 @@ not";
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 6, 4 }));
+            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 725, 4 }));
         }
 
         [Test]
@@ -426,7 +448,7 @@ not";
             simulatorInstance.runSimulation();
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
-            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 6, 7 }));
+            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 725, 7 }));
         }
 
         [Test]
@@ -460,7 +482,7 @@ not";
             var values = handle.getValues();
             values.ForEach(x => Console.WriteLine(x));
             //1 bitwise negated in 2's complement is -2
-            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 1, -2 }));
+            Assert.IsTrue(values.SequenceEqual(new List<int>() { 0, 725, -2 }));
         }
 
         [Test]

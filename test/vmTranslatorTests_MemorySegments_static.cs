@@ -17,7 +17,8 @@ namespace Tests.Memory
         // by Nisan and Schocken, MIT Press.
         // File name: projects/07/MemoryAccess/StaticTest/StaticTest.vm
         string staticTest1 =
-      @"push constant 111
+      @"function main.main 0
+      push constant 111
 push constant 333
 push constant 888
 pop static 8
@@ -27,7 +28,8 @@ push static 3
 push static 1
 sub
 push static 8
-add";
+add
+return";
 
 
 
@@ -58,7 +60,7 @@ add";
 
             simulatorInstance.runSimulation();
             //simulatorInstance.printMemory(0);
-             var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
+            var sp = simulatorInstance.mainMemory[simulatorInstance.mainMemory[256] - 1];
             Assert.AreEqual(1110, sp);
         }
     }
