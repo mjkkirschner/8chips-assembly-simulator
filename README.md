@@ -52,9 +52,9 @@ valid instructions for the assembler:
 - LOADB :
 - LOADBIMMEDIATE :
 - STOREB :
-- UPDATEFLAGS :
+- UPDATEFLAGS : Updates the flags register which has bitflags for `A>B, A==B, A<B` - on real hardware this should be called before any jumps are made. Not required in this simulator.
 - HALT :
-- LOADCONTROLIMMEDIATE :
+- LOADCONTROLIMMEDIATE : Not implemented in simulator.
 - STORECOMSTATUS : Not implemented in simulator.
 - STORECOMDATA : Not implemented in simulator.
 - STOREAATPOINTER : 
@@ -110,4 +110,20 @@ These have a form like:
 will create a symbol in the assembler symbol table at memory address 100
 you can then use it like any other symbol.
 
-### vm language docs:
+### vm stack language docs:
+- PUSH  `<segment> <index>`
+- POP  `<segment> <index>`
+- LABEL `<labelName>`
+- GOTO `<labelName>`
+- IF-GOTO `<labelName>`
+- FUNCTION `<funcName> <numberOfLocals>`
+- CALL `<funcName> <numberOfArgsPushedToStack>`
+- RETURN
+- add
+- sub
+- eq
+- lt
+- or
+- and
+- not
+- neg
