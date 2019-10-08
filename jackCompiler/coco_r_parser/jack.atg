@@ -1,0 +1,56 @@
+COMPILER jack
+
+CHARACTERS
+identStart = '_' + 'a'..'z' + 'A'..'Z'.
+identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9'.
+digit = '0'..'9'
+anyButDoubleQuote = ANY - '\"' - '\\'.
+
+TOKENS
+
+add = '+'.
+sub = '-'.
+mult = '*'.
+div = '/'.
+and = '&'.
+or = '|'.
+lt = '<'.
+gt = '>'.
+eq = '=='.
+assign = '='.
+not = '~'.
+
+true = 'true'.
+false = 'false'.
+null = 'null'.
+this = 'this'.
+
+ident = identStart {identPart}.
+integerConstant = digit {digit}.
+stringConstant = "'" (anyButQuote)  "'".
+class = 'class'.
+type = ('int' | 'char' | 'boolean' | ident).
+classVarType = ('static' | 'field').
+classVarDec = classVarType type ident {',' ident} ';'.
+
+parameterList = [type ident {','type ident}].
+varDec = 'var' type ident {',' type ident}
+statements = {statement}
+subroutineType = ('constructor' | 'function' | 'method').
+subroutineBody = '{' {varDec} statements '}'.
+subroutineDec = subroutineType ('void'| type) ident '('parameterList')' subroutineBody.
+
+statement = letStatement | ifStatement | whileStatement | doStatement | returnStatement.
+letStatement = 'let' ident ['[' expression ']'] '=' expression ';'.
+(* missing other statement types TODO*)
+
+expression = term {op term}.
+term = integerConstant | stringConstant | ident | ident'['expression ']' | subroutineCall | '('expression')' | unaryOp term.
+subroutineCall = ident '(' expressionList ')' | ident '.' ident '(' expressionList ')'.
+expressionList = [expression{',' expression}].
+op = add | sub | mult | div | and | or | lt | gt | eq | assign.
+unaryOp = sub | not.
+
+keywordConstant = true | false | null | this
+
+(* unclear to me if these tokens are way too specific.... and all this should be defined in the producutions instead...*)
