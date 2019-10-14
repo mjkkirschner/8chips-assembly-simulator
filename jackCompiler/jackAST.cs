@@ -4,11 +4,80 @@ using System.Globalization;
 using System.Linq;
 using static jackCompiler.AST.Operators;
 
+
 namespace jackCompiler.AST
 {
 
+    public static class ASTBuilder
+    {
+
+        public static ASTNode buildKeyWordNode(string token)
+        {
+            if (token == "true")
+            {
+                return new BooleanNode(true);
+            }
+            if (token == "false")
+            {
+                return new BooleanNode(false);
+            }
+            if (token == "this")
+            {
+                return new ThisNode();
+            }
+            if (token == "null")
+            {
+                return new NullNode();
+            }
+            throw new Exception("unknown keyword token");
+        }
+
+        public static Operator OperatorFromString(string token)
+        {
+            var matchingOp = Operators.OpMap.Where(x => x.Value == token);
+            if (matchingOp.Count() != 0)
+            {
+                return matchingOp.FirstOrDefault().Key;
+            }
+            throw new Exception($"could not find matching operator for token {token} ");
+        }
+
+        public static UnaryOperator UnaryOperatorFromString(string token)
+        {
+            var matchingOp = Operators.UnOpMap.Where(x => x.Value == token);
+            if (matchingOp.Count() != 0)
+            {
+                return matchingOp.FirstOrDefault().Key;
+            }
+            throw new Exception($"could not find matching operator for token {token} ");
+        }
+
+    }
+
+
     public static class Operators
     {
+        public static Dictionary<Operator, string> OpMap;
+        public static Dictionary<UnaryOperator, string> UnOpMap;
+        static Operators()
+        {
+            OpMap = new Dictionary<Operator, string>();
+
+            OpMap.Add(Operator.add, "+");
+            OpMap.Add(Operator.sub, "-");
+            OpMap.Add(Operator.mult, "*");
+            OpMap.Add(Operator.divide, "/");
+            OpMap.Add(Operator.and, "&");
+            OpMap.Add(Operator.or, "|");
+            OpMap.Add(Operator.less, "<");
+            OpMap.Add(Operator.greater, ">");
+            OpMap.Add(Operator.assign, "=");
+            OpMap.Add(Operator.equal, "==");
+
+            UnOpMap = new Dictionary<UnaryOperator, string>();
+            UnOpMap.Add(UnaryOperator.neg, "-");
+            UnOpMap.Add(UnaryOperator.not, "~");
+        }
 
 
         public enum Operator
@@ -34,30 +103,15 @@ namespace jackCompiler.AST
 
         public static string OperatorToString(object op)
         {
-            var opMap = new Dictionary<Operator, string>();
 
-            opMap.Add(Operator.add, "+");
-            opMap.Add(Operator.sub, "-");
-            opMap.Add(Operator.mult, "*");
-            opMap.Add(Operator.divide, "/");
-            opMap.Add(Operator.and, "&");
-            opMap.Add(Operator.or, "|");
-            opMap.Add(Operator.less, "<");
-            opMap.Add(Operator.greater, ">");
-            opMap.Add(Operator.assign, "=");
-            opMap.Add(Operator.equal, "==");
-
-            var unopMap = new Dictionary<UnaryOperator, string>();
-            unopMap.Add(UnaryOperator.neg, "-");
-            unopMap.Add(UnaryOperator.not, "~");
 
             if (op is UnaryOperator)
             {
-                return unopMap[(UnaryOperator)op];
+                return Operators.UnOpMap[(UnaryOperator)op];
             }
             else if (op is Operator)
             {
-                return opMap[(Operator)op];
+                return Operators.OpMap[(Operator)op];
             }
             else
             {
@@ -142,6 +196,12 @@ namespace jackCompiler.AST
             this.IsField = isField;
         }
 
+        //TODO may need special identifer token for this.
+        public ClassVarDeclNode() : base(new IdentiferNode("CONSTRUCTION_IN_PROGRESS"))
+        {
+
+        }
+
     }
 
     public class VarDeclNode : ASTNode
@@ -156,6 +216,10 @@ namespace jackCompiler.AST
             {
                 throw new Exception("you cannot declare a variable without a type.");
             }
+        }
+        public VarDeclNode()
+        {
+
         }
 
         public override IEnumerable<ASTNode> Children()
@@ -178,6 +242,11 @@ namespace jackCompiler.AST
         //TODO consider argumentListNode.
         public IEnumerable<VarDeclNode> ParameterList { get; set; }
         public SubroutineBodyNode FunctionBody { get; set; }
+
+        public SubroutineDeclNode()
+        {
+
+        }
 
         public SubroutineDeclNode(SubroutineType functionType, IdentiferNode functionName, Type returnType, IEnumerable<VarDeclNode> parameterList, SubroutineBodyNode functionBody)
         {
@@ -209,6 +278,10 @@ namespace jackCompiler.AST
         {
             this.Variables = variables;
             this.Statements = statements;
+        }
+        public SubroutineBodyNode()
+        {
+
         }
 
         public override string ToString()
@@ -244,6 +317,9 @@ namespace jackCompiler.AST
             this.Rhs = rhs;
             this.Operator = op;
         }
+        public BinaryExpressionNode()
+        {
+        }
 
         public override string ToString()
         {
@@ -257,13 +333,13 @@ namespace jackCompiler.AST
 
     }
 
-    public class UnaryExpression : ASTNode
+    public class UnaryExpressionNode : ASTNode
     {
-        public Operator Operator { get; set; }
+        public UnaryOperator Operator { get; set; }
 
         public ASTNode Rhs { get; set; }
 
-        public UnaryExpression(ASTNode rhs, Operator op)
+        public UnaryExpressionNode(ASTNode rhs, UnaryOperator op)
         {
             this.Rhs = rhs;
             this.Operator = op;
@@ -336,7 +412,15 @@ namespace jackCompiler.AST
             this.ClassVariables = classVariables;
         }
 
+        public ClassDeclNode()
+        {
+
+        }
+
     }
+
+
+    #region primitiveNodes
 
     public class IntNode : ASTNode
     {
@@ -353,5 +437,61 @@ namespace jackCompiler.AST
         }
 
     }
+    public class StringNode : ASTNode
+    {
+        public string Value { get; set; }
 
+        public StringNode(string value)
+        {
+            this.Value = value;
+        }
+
+        public override string ToString()
+        {
+            return Value;
+        }
+
+    }
+
+    public class BooleanNode : ASTNode
+    {
+        public bool Value { get; set; }
+
+        public BooleanNode(bool value)
+        {
+            this.Value = value;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+
+    }
+
+    public class NullNode : ASTNode
+    {
+
+        public NullNode()
+        { }
+
+        public override string ToString()
+        {
+            return "null";
+        }
+    }
+
+    public class ThisNode : ASTNode
+    {
+
+        public ThisNode()
+        { }
+
+        public override string ToString()
+        {
+            return "this";
+        }
+
+    }
+    #endregion
 }

@@ -1,10 +1,22 @@
+
+using System.Linq;
+using static jackCompiler.AST.Operators;
+using System.Collections.Generic;
+
 COMPILER jack
+//(* don't support multiple var defs per line  *)
+public jackCompiler.AST.ASTNode root { get; set; }
+
 
 CHARACTERS
 identStart = '_' + 'a'..'z' + 'A'..'Z'.
 identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9'.
-digit = '0'..'9'
+digit = '0'..'9'.
 anyButDoubleQuote = ANY - '\"' - '\\'.
+anyButQuote = ANY - '\''.
+cr  = '\r'.
+lf  = '\n'.
+tab = '\t'.
 
 TOKENS
 
@@ -16,26 +28,39 @@ and = '&'.
 or = '|'.
 lt = '<'.
 gt = '>'.
-eq = '=='.
-assign = '='.
+eq = "==".
+assign = "=".
 not = '~'.
 
-true = 'true'.
-false = 'false'.
-null = 'null'.
-this = 'this'.
+
+
 
 ident = identStart {identPart}.
 integerConstant = digit {digit}.
 stringConstant = "'" (anyButQuote)  "'".
-class = 'class'.
-type = ('int' | 'char' | 'boolean' | ident).
-classVarType = ('static' | 'field').
-classVarDec = classVarType type ident {',' ident} ';'.
+
+//literals declared below general:
+true = "true".
+false = "false".
+null = "null".
+this = "this".
+static = "static".
+field = "field".
+
+kw_constructor = "constructor".
+kw_method = "method".
+kw_function = "function".
+kw_class = "class".
+kw_let = "let".
+kw_return = "return".
+
+/* 
+classVarDec = classVarType type ident ';'.
+//type = ("int" | "char" | "boolean" | ident ).
 
 parameterList = [type ident {','type ident}].
-varDec = 'var' type ident {',' type ident}
-statements = {statement}
+varDec = "var" type ident {',' type ident}.
+statements = {statement}.
 subroutineType = ('constructor' | 'function' | 'method').
 subroutineBody = '{' {varDec} statements '}'.
 subroutineDec = subroutineType ('void'| type) ident '('parameterList')' subroutineBody.
@@ -48,9 +73,310 @@ expression = term {op term}.
 term = integerConstant | stringConstant | ident | ident'['expression ']' | subroutineCall | '('expression')' | unaryOp term.
 subroutineCall = ident '(' expressionList ')' | ident '.' ident '(' expressionList ')'.
 expressionList = [expression{',' expression}].
-op = add | sub | mult | div | and | or | lt | gt | eq | assign.
+op = (add | sub | mult | div | and | or | lt | gt | eq | assign).
 unaryOp = sub | not.
-
 keywordConstant = true | false | null | this
 
-(* unclear to me if these tokens are way too specific.... and all this should be defined in the producutions instead...*)
+*/
+
+
+
+IGNORE cr + lf + tab
+
+
+PRODUCTIONS
+//TODO will need to make this list of classes somehow...
+jack
+=                                  (.jackCompiler.AST.ClassDeclNode classNode;.)
+ClassDeclaration<out classNode>
+                                   (.root = classNode; .)
+.
+/*------------------------------------------------------------------------*/
+Identifer<out jackCompiler.AST.IdentiferNode node >
+= ident                             (.node = new jackCompiler.AST.IdentiferNode(t.val);  .).
+/*------------------------------------------------------------------------*/
+IndexedIdentifier<out jackCompiler.AST.IdentiferNode identNode>
+=                                  (.jackCompiler.AST.ASTNode indexExpression;.)     
+ident                              (.var name = t.val; .)     
+'['
+Expression<out indexExpression>
+']'                                (.identNode = new jackCompiler.AST.IndexedIdentifierNode(name,indexExpression); .)
+.
+
+/*------------------------------------------------------------------------*/
+
+
+ClassDeclaration<out jackCompiler.AST.ClassDeclNode currentClass >
+=                                   (.currentClass = new jackCompiler.AST.ClassDeclNode(); .)
+kw_class
+ident                               (.currentClass.ClassName = t.val; .)
+'{'                                 (. List<jackCompiler.AST.ClassVarDeclNode> varnodeList;.)
+                                    (. List<jackCompiler.AST.SubroutineDeclNode> funcnodelist;.)
+ClassVarDeclarationList <out varnodeList> (. currentClass.ClassVariables = varnodeList; .) 
+SubroutineDeclarationList <out funcnodelist> (. currentClass.ClassSubroutines = funcnodelist; .)
+'}'.
+
+/*------------------------------------------------------------------------*/
+ClassVarDeclarationList<.out List<jackCompiler.AST.ClassVarDeclNode> varlist.>
+=                                   (.varlist =  new List<jackCompiler.AST.ClassVarDeclNode>();.)
+                                    (.jackCompiler.AST.ClassVarDeclNode node;.)
+{ClassVarDeclaration<out node>                (. varlist.Add(node);.)
+}.
+
+/*------------------------------------------------------------------------*/
+ClassVarDeclaration<out jackCompiler.AST.ClassVarDeclNode currentClassVarDec >
+=                                   (. currentClassVarDec = new jackCompiler.AST.ClassVarDeclNode(); Type classType; .)
+(static | field) (. if(t.val == "static"){
+                    currentClassVarDec.IsStatic = true;
+                    currentClassVarDec.IsField = false;
+                                     }
+                    else{
+                        currentClassVarDec.IsStatic = false;
+                        currentClassVarDec.IsField = true;
+                    }
+                                     .)
+ident /*was a type */                (.classType = Type.GetType(t.val); .)
+                                    (. jackCompiler.AST.IdentiferNode varident;.)
+Identifer<out varident> (. varident.Type = classType;.)
+                    (. currentClassVarDec.Identifer = varident; .)
+';'.
+/*------------------------------------------------------------------------*/
+SubroutineDeclaration<out jackCompiler.AST.SubroutineDeclNode currentSubDec >
+=                                   (. currentSubDec = new jackCompiler.AST.SubroutineDeclNode(); Type returnType; .)
+(kw_constructor | kw_method | kw_function) (. if(t.val == "constructor"){
+                    currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.constructor;
+                                     }
+                    else if(t.val == "method"){
+                         currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.method;
+                    }
+                    else{
+                         currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.function;
+                    }
+                                     .)
+ident /*was a type */                (.returnType = Type.GetType(t.val); .)
+                                    (. jackCompiler.AST.IdentiferNode typeIdent;.)
+Identifer<out typeIdent> (. typeIdent.Type = returnType;.)
+                    (. currentSubDec.FunctionName = typeIdent; .)
+                    (. currentSubDec.ReturnType = returnType; .)
+'('                 (. List<jackCompiler.AST.VarDeclNode> paramList;.)
+ParameterList<.out paramList.>
+                    (.currentSubDec.ParameterList =  paramList;.)
+                    (.jackCompiler.AST.SubroutineBodyNode bodyNode;.)
+SubRoutineBody<out bodyNode>
+                    (.currentSubDec.FunctionBody = bodyNode;.)
+                    
+
+')'.
+
+/*------------------------------------------------------------------------*/
+ParameterList<.out List<jackCompiler.AST.VarDeclNode> varlist.> 
+=                            (. varlist =  new List<jackCompiler.AST.VarDeclNode>(); .)
+[
+{
+ident
+                                 (.Type varType;.)
+                                 (. jackCompiler.AST.IdentiferNode typeIdent;.)
+                                 (.varType = Type.GetType(t.val); .)
+Identifer<out typeIdent>         (.typeIdent.Type = varType;.)
+                                 (. varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); .) 
+}
+].
+
+/*------------------------------------------------------------------------*/
+SubroutineDeclarationList<.out List<jackCompiler.AST.SubroutineDeclNode> varlist.>
+=                                   (.varlist =  new List<jackCompiler.AST.SubroutineDeclNode>();.)
+                                    (.jackCompiler.AST.SubroutineDeclNode node;.)
+{SubroutineDeclaration<out node>                (. varlist.Add(node);.)
+}.
+
+/*------------------------------------------------------------------------*/
+SubRoutineBody<out jackCompiler.AST.SubroutineBodyNode bodyNode>
+=                                  (.bodyNode = new jackCompiler.AST.SubroutineBodyNode(); .)
+                                   (.var varList = new List<jackCompiler.AST.VarDeclNode>(); .)
+                                   (.var statList = new List<jackCompiler.AST.StatementNode>(); .)
+{                           
+
+      VarDeclaration<out jackCompiler.AST.VarDeclNode VarDeclNode>
+  
+                                   (.varList.Add(VarDeclNode) ; .)
+                                  
+}
+                                   (. bodyNode.Variables = varList; .)
+
+{
+      Statement<out jackCompiler.AST.StatementNode statementNode>
+  
+                                   (.statList.Add(statementNode) ; .)
+}
+                                   (.bodyNode.Statements = statList; .).
+
+
+/*------------------------------------------------------------------------*/
+//SubroutineCall<out>
+
+
+
+/*------------------------------------------------------------------------*/
+VarDeclaration <out jackCompiler.AST.VarDeclNode vardeclNode>
+=
+"var"                                   (.vardeclNode = new jackCompiler.AST.VarDeclNode(); .)
+ident /*was a type */                   (.var varType = Type.GetType(t.val); .)
+                                        (. jackCompiler.AST.IdentiferNode varident;.)
+Identifer<out varident>                 (. varident.Type = varType;.)
+                                        (. vardeclNode.Identifer = varident; .)
+';'.
+
+/*------------------------------------------------------------------------*/
+Statement<out jackCompiler.AST.StatementNode statementNode>
+= 
+(.statementNode = null;.)
+(
+LetStatement <out statementNode>
+|
+ReturnStatement<out statementNode>
+)
+.
+
+//let x = 100;
+/*------------------------------------------------------------------------*/
+LetStatement <out jackCompiler.AST.StatementNode letnode>
+=                                        (.jackCompiler.AST.IdentiferNode identNode = null;.)
+kw_let 
+(                            
+Identifer<out identNode> 
+| 
+IndexedIdentifier<out identNode>
+)
+assign                                  (.jackCompiler.AST.ASTNode expressionNode;.)
+Expression<out expressionNode>
+                                        (.var assignmentExpression = new jackCompiler.AST.BinaryExpressionNode(identNode,expressionNode,jackCompiler.AST.Operators.Operator.assign);.)
+                                        (.letnode = new jackCompiler.AST.LetStatementNode(assignmentExpression);.)
+';'.
+/*------------------------------------------------------------------------*/
+ReturnStatement <out jackCompiler.AST.StatementNode returnnode>
+=                                       (.jackCompiler.AST.ASTNode expressionNode = null;.)
+kw_return                
+[
+Expression<out expressionNode>               
+]                                       
+                                        (.returnnode = new jackCompiler.AST.ReturnStatementNode(expressionNode); .)
+';'.
+
+/*------------------------------------------------------------------------*/
+Expression<out jackCompiler.AST.ASTNode expressionNode>
+=                                                  (. jackCompiler.AST.ASTNode term1Node; .)
+Term<out term1Node>                                (.var currentTerm = term1Node;.)
+[
+{                                (.jackCompiler.AST.Operators.Operator opNode;.)
+                                 (.jackCompiler.AST.ASTNode otherTerm;.)
+Op<out opNode>                  
+Term<out otherTerm>             (.var currentBinaryExpression = new jackCompiler.AST.BinaryExpressionNode(currentTerm,otherTerm,opNode); .)
+                                (.currentTerm = currentBinaryExpression;  .)
+}
+]                                  (.expressionNode = currentTerm; .)
+.
+
+
+/*------------------------------------------------------------------------*/
+Term<out jackCompiler.AST.ASTNode termNode>
+=                   (.jackCompiler.AST.IntNode intNode = null;.)
+                    (.jackCompiler.AST.StringNode stringNode = null;.)
+                    (.jackCompiler.AST.ASTNode keywordNode = null;.)
+                    (.jackCompiler.AST.IdentiferNode identNode = null;.)   
+                    (.jackCompiler.AST.IdentiferNode identIndexNode = null;.)
+                    (.jackCompiler.AST.ASTNode subcallNode = null;.)   
+                    (.jackCompiler.AST.ASTNode expressionNode = null;.)
+                    (.jackCompiler.AST.Operators.UnaryOperator opNode = 0;.)
+                    (.jackCompiler.AST.ASTNode unaryTermNode = null;.)
+
+                    //hack
+                    (.termNode = null;.)
+(                   
+IntConstant<out intNode>  (.termNode = intNode; .)
+|                  
+StringConstant<out stringNode>  (.termNode = stringNode; .)
+|                   
+KeyWordConstant<out keywordNode>   (.termNode = keywordNode; .)
+|                      
+Identifer<out identNode>  (.termNode = identNode; .)
+|                         
+IndexedIdentifier<out identIndexNode>  (.termNode = identIndexNode; .)
+|                        
+//SubroutineCall<out subcallNode>  (.termNode = subcallNode; .)
+|                         
+('('
+Expression<out expressionNode> (.termNode = expressionNode; .)
+                               
+')')
+|
+(UnaryOp<out opNode> Term<out unaryTermNode>)
+                              (.termNode = new jackCompiler.AST.UnaryExpressionNode(unaryTermNode,opNode);.)
+).
+
+
+
+
+/*------------------------------------------------------------------------*/
+IntConstant<out jackCompiler.AST.IntNode intNode>
+=
+integerConstant 
+                         (.intNode = new jackCompiler.AST.IntNode (Int32.Parse(t.val));.)
+.
+/*------------------------------------------------------------------------*/
+StringConstant<out jackCompiler.AST.StringNode strNode>
+=
+stringConstant 
+                         (.strNode = new jackCompiler.AST.StringNode((t.val));.)
+.
+
+KeyWordConstant<out jackCompiler.AST.ASTNode astNode>
+=
+(
+true
+|
+false
+|
+null
+|
+this     
+) 
+                         (.astNode = jackCompiler.AST.ASTBuilder.buildKeyWordNode(t.val);.)
+.
+
+/*------------------------------------------------------------------------*/
+Op<out jackCompiler.AST.Operators.Operator op>
+=
+(
+add
+|
+sub
+|
+mult
+|
+div
+|
+and
+|
+or
+|
+lt
+|
+gt
+|
+eq
+                           
+)
+   (.op = jackCompiler.AST.ASTBuilder.OperatorFromString(t.val); .)
+.
+
+/*------------------------------------------------------------------------*/
+UnaryOp<out jackCompiler.AST.Operators.UnaryOperator op>
+=
+(
+sub
+|
+not                
+)
+               (.op = jackCompiler.AST.ASTBuilder.UnaryOperatorFromString(t.val); .)
+.
+END jack.
