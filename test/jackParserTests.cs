@@ -13,9 +13,9 @@ namespace Tests.Jack
         {
             var testClassCode =
             @"  class Main{
-                function void main(){
-                var x int
-                let x = 100
+                function system.void main(){
+                var x int;
+                let x = 100;
                 }
             }";
             var path = Path.GetTempFileName();

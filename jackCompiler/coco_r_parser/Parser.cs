@@ -214,7 +214,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 	}
 
 	void ClassVarDeclaration(out jackCompiler.AST.ClassVarDeclNode currentClassVarDec ) {
-		currentClassVarDec = new jackCompiler.AST.ClassVarDeclNode(); Type classType; 
+		currentClassVarDec = new jackCompiler.AST.ClassVarDeclNode(); jackCompiler.AST.JackType classType; 
 		if (la.kind == 19) {
 			Get();
 		} else if (la.kind == 20) {
@@ -230,7 +230,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		}
 		                
 		Expect(12);
-		classType = Type.GetType(t.val); 
+		classType = new jackCompiler.AST.JackType(t.val); 
 		jackCompiler.AST.IdentiferNode varident;
 		Identifer(out varident);
 		varident.Type = classType;
@@ -239,7 +239,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 	}
 
 	void SubroutineDeclaration(out jackCompiler.AST.SubroutineDeclNode currentSubDec ) {
-		currentSubDec = new jackCompiler.AST.SubroutineDeclNode(); Type returnType; 
+		currentSubDec = new jackCompiler.AST.SubroutineDeclNode(); jackCompiler.AST.JackType returnType; 
 		if (la.kind == 21) {
 			Get();
 		} else if (la.kind == 22) {
@@ -258,7 +258,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		}
 		
 		Expect(12);
-		returnType = Type.GetType(t.val); 
+		returnType = new jackCompiler.AST.JackType(t.val); 
 		jackCompiler.AST.IdentiferNode typeIdent;
 		Identifer(out typeIdent);
 		typeIdent.Type = returnType;
@@ -269,9 +269,9 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		ParameterList(out paramList);
 		currentSubDec.ParameterList =  paramList;
 		jackCompiler.AST.SubroutineBodyNode bodyNode;
+		Expect(33);
 		SubRoutineBody(out bodyNode);
 		currentSubDec.FunctionBody = bodyNode;
-		Expect(33);
 	}
 
 	void ParameterList(out List<jackCompiler.AST.VarDeclNode> varlist) {
@@ -279,9 +279,9 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		if (la.kind == 12) {
 			while (la.kind == 12) {
 				Get();
-				Type varType;
+				jackCompiler.AST.JackType varType;
 				jackCompiler.AST.IdentiferNode typeIdent;
-				varType = Type.GetType(t.val); 
+				varType = new jackCompiler.AST.JackType(t.val); 
 				Identifer(out typeIdent);
 				typeIdent.Type = varType;
 				varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); 
@@ -293,6 +293,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		bodyNode = new jackCompiler.AST.SubroutineBodyNode(); 
 		var varList = new List<jackCompiler.AST.VarDeclNode>(); 
 		var statList = new List<jackCompiler.AST.StatementNode>(); 
+		Expect(29);
 		while (la.kind == 34) {
 			VarDeclaration(out jackCompiler.AST.VarDeclNode VarDeclNode);
 			varList.Add(VarDeclNode) ; 
@@ -303,13 +304,14 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			statList.Add(statementNode) ; 
 		}
 		bodyNode.Statements = statList; 
+		Expect(30);
 	}
 
 	void VarDeclaration(out jackCompiler.AST.VarDeclNode vardeclNode) {
 		Expect(34);
 		vardeclNode = new jackCompiler.AST.VarDeclNode(); 
 		Expect(12);
-		var varType = Type.GetType(t.val); 
+		var varType = new jackCompiler.AST.JackType(t.val); 
 		jackCompiler.AST.IdentiferNode varident;
 		Identifer(out varident);
 		varident.Type = varType;

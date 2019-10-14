@@ -125,6 +125,19 @@ namespace jackCompiler.AST
         constructor, method, function
     }
 
+    public class JackType
+    {
+        public String Name { get; set; }
+        public JackType(string name)
+        {
+            Name = name;
+        }
+
+        public override string ToString(){
+            return Name;
+        }
+    }
+
     public abstract class ASTNode
     {
         public Guid ID { get; set; }
@@ -148,8 +161,8 @@ namespace jackCompiler.AST
 
         //TODO use c# types for this?
         //should this property even exist here?
-        public Type Type { get; set; }
-        public IdentiferNode(string ident, Type type = null)
+        public JackType Type { get; set; }
+        public IdentiferNode(string ident, JackType type = null)
         {
             this.Value = ident;
             this.Type = type;
@@ -238,7 +251,7 @@ namespace jackCompiler.AST
     {
         public SubroutineType FunctionType { get; set; }
         public IdentiferNode FunctionName { get; set; }
-        public Type ReturnType { get; set; }
+        public JackType ReturnType { get; set; }
         //TODO consider argumentListNode.
         public IEnumerable<VarDeclNode> ParameterList { get; set; }
         public SubroutineBodyNode FunctionBody { get; set; }
@@ -248,7 +261,7 @@ namespace jackCompiler.AST
 
         }
 
-        public SubroutineDeclNode(SubroutineType functionType, IdentiferNode functionName, Type returnType, IEnumerable<VarDeclNode> parameterList, SubroutineBodyNode functionBody)
+        public SubroutineDeclNode(SubroutineType functionType, IdentiferNode functionName, JackType returnType, IEnumerable<VarDeclNode> parameterList, SubroutineBodyNode functionBody)
         {
             this.FunctionType = functionType;
             this.FunctionName = functionName;
@@ -263,7 +276,7 @@ namespace jackCompiler.AST
 
         public override string ToString()
         {
-            var output = $"{FunctionType} {ReturnType} {FunctionName}({String.Join(",", ParameterList.Select(x => x.Identifer.ToString()))})";
+            var output = $"{FunctionType} {ReturnType.Name} {FunctionName.Value}({String.Join(",", ParameterList.Select(x => x.Identifer.ToString()))})";
             output += "{" + $"{Environment.NewLine} {FunctionBody} {Environment.NewLine}" + "}";
             return output;
         }

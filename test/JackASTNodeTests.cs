@@ -43,7 +43,7 @@ namespace Tests.Jack
             */
 
             var funcBody = new SubroutineBodyNode(new List<VarDeclNode>(), new List<StatementNode>());
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), typeof(void), new List<VarDeclNode>(), funcBody);
+            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), new JackType("void"), new List<VarDeclNode>(), funcBody);
             var classnode = new ClassDeclNode("Main", new List<ClassVarDeclNode>(), new List<SubroutineDeclNode>() { function });
 
             Console.WriteLine(classnode);
@@ -58,12 +58,12 @@ namespace Tests.Jack
                 }
             */
 
-            var xdecl = new VarDeclNode(new IdentiferNode("x", typeof(Int32)));
-            var ydecl = new VarDeclNode(new IdentiferNode("y", typeof(Int32)));
+            var xdecl = new VarDeclNode(new IdentiferNode("x", new JackType("Int32")));
+            var ydecl = new VarDeclNode(new IdentiferNode("y", new JackType("Int32")));
             var funcBody = new SubroutineBodyNode(new List<VarDeclNode>() { },
             new List<StatementNode>() { new ReturnStatementNode(new BinaryExpressionNode(new IdentiferNode("x"), new IdentiferNode("y"), Operators.Operator.add)) });
 
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("add"), typeof(Int32), new List<VarDeclNode>() { xdecl, ydecl }, funcBody);
+            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("add"), new JackType("Int32"), new List<VarDeclNode>() { xdecl, ydecl }, funcBody);
 
             Console.WriteLine(function);
         }
@@ -83,8 +83,8 @@ namespace Tests.Jack
             var assign = new BinaryExpressionNode(xID, const100, Operators.Operator.assign);
             var letStatment = new LetStatementNode(assign);
 
-            var funcBody = new SubroutineBodyNode(new List<VarDeclNode>() { new VarDeclNode(new IdentiferNode("x", typeof(Int32))) }, new List<StatementNode>() { letStatment });
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), typeof(void), new List<VarDeclNode>(), funcBody);
+            var funcBody = new SubroutineBodyNode(new List<VarDeclNode>() { new VarDeclNode(new IdentiferNode("x", new JackType("Int32"))) }, new List<StatementNode>() { letStatment });
+            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), new JackType("void"), new List<VarDeclNode>(), funcBody);
             var classnode = new ClassDeclNode("Main", new List<ClassVarDeclNode>(), new List<SubroutineDeclNode>() { function });
 
             Console.WriteLine(classnode);
