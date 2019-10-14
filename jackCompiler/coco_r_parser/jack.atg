@@ -10,7 +10,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 
 CHARACTERS
 identStart = '_' + 'a'..'z' + 'A'..'Z'.
-identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9'.
+identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9' +'.'.
 digit = '0'..'9'.
 anyButDoubleQuote = ANY - '\"' - '\\'.
 anyButQuote = ANY - '\''.
@@ -125,7 +125,7 @@ ClassVarDeclarationList<.out List<jackCompiler.AST.ClassVarDeclNode> varlist.>
 
 /*------------------------------------------------------------------------*/
 ClassVarDeclaration<out jackCompiler.AST.ClassVarDeclNode currentClassVarDec >
-=                                   (. currentClassVarDec = new jackCompiler.AST.ClassVarDeclNode(); Type classType; .)
+=                                   (. currentClassVarDec = new jackCompiler.AST.ClassVarDeclNode(); jackCompiler.AST.JackType classType; .)
 (static | field) (. if(t.val == "static"){
                     currentClassVarDec.IsStatic = true;
                     currentClassVarDec.IsField = false;
@@ -135,14 +135,14 @@ ClassVarDeclaration<out jackCompiler.AST.ClassVarDeclNode currentClassVarDec >
                         currentClassVarDec.IsField = true;
                     }
                                      .)
-ident /*was a type */                (.classType = Type.GetType(t.val); .)
+ident /*was a type */                (.classType = new jackCompiler.AST.JackType(t.val); .)
                                     (. jackCompiler.AST.IdentiferNode varident;.)
 Identifer<out varident> (. varident.Type = classType;.)
                     (. currentClassVarDec.Identifer = varident; .)
 ';'.
 /*------------------------------------------------------------------------*/
 SubroutineDeclaration<out jackCompiler.AST.SubroutineDeclNode currentSubDec >
-=                                   (. currentSubDec = new jackCompiler.AST.SubroutineDeclNode(); Type returnType; .)
+=                                   (. currentSubDec = new jackCompiler.AST.SubroutineDeclNode(); jackCompiler.AST.JackType returnType; .)
 (kw_constructor | kw_method | kw_function) (. if(t.val == "constructor"){
                     currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.constructor;
                                      }
@@ -153,7 +153,7 @@ SubroutineDeclaration<out jackCompiler.AST.SubroutineDeclNode currentSubDec >
                          currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.function;
                     }
                                      .)
-ident /*was a type */                (.returnType = Type.GetType(t.val); .)
+ident /*was a type */                (.returnType = new jackCompiler.AST.JackType(t.val); .)
                                     (. jackCompiler.AST.IdentiferNode typeIdent;.)
 Identifer<out typeIdent> (. typeIdent.Type = returnType;.)
                     (. currentSubDec.FunctionName = typeIdent; .)
@@ -162,11 +162,10 @@ Identifer<out typeIdent> (. typeIdent.Type = returnType;.)
 ParameterList<.out paramList.>
                     (.currentSubDec.ParameterList =  paramList;.)
                     (.jackCompiler.AST.SubroutineBodyNode bodyNode;.)
+')'
 SubRoutineBody<out bodyNode>
                     (.currentSubDec.FunctionBody = bodyNode;.)
-                    
-
-')'.
+.
 
 /*------------------------------------------------------------------------*/
 ParameterList<.out List<jackCompiler.AST.VarDeclNode> varlist.> 
@@ -174,9 +173,9 @@ ParameterList<.out List<jackCompiler.AST.VarDeclNode> varlist.>
 [
 {
 ident
-                                 (.Type varType;.)
+                                 (.jackCompiler.AST.JackType varType;.)
                                  (. jackCompiler.AST.IdentiferNode typeIdent;.)
-                                 (.varType = Type.GetType(t.val); .)
+                                 (.varType = new jackCompiler.AST.JackType(t.val); .)
 Identifer<out typeIdent>         (.typeIdent.Type = varType;.)
                                  (. varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); .) 
 }
@@ -194,6 +193,7 @@ SubRoutineBody<out jackCompiler.AST.SubroutineBodyNode bodyNode>
 =                                  (.bodyNode = new jackCompiler.AST.SubroutineBodyNode(); .)
                                    (.var varList = new List<jackCompiler.AST.VarDeclNode>(); .)
                                    (.var statList = new List<jackCompiler.AST.StatementNode>(); .)
+'{'
 {                           
 
       VarDeclaration<out jackCompiler.AST.VarDeclNode VarDeclNode>
@@ -208,7 +208,9 @@ SubRoutineBody<out jackCompiler.AST.SubroutineBodyNode bodyNode>
   
                                    (.statList.Add(statementNode) ; .)
 }
-                                   (.bodyNode.Statements = statList; .).
+                                   (.bodyNode.Statements = statList; .)
+
+'}'.
 
 
 /*------------------------------------------------------------------------*/
@@ -220,7 +222,7 @@ SubRoutineBody<out jackCompiler.AST.SubroutineBodyNode bodyNode>
 VarDeclaration <out jackCompiler.AST.VarDeclNode vardeclNode>
 =
 "var"                                   (.vardeclNode = new jackCompiler.AST.VarDeclNode(); .)
-ident /*was a type */                   (.var varType = Type.GetType(t.val); .)
+ident /*was a type */                   (.var varType = new jackCompiler.AST.JackType(t.val); .)
                                         (. jackCompiler.AST.IdentiferNode varident;.)
 Identifer<out varident>                 (. varident.Type = varType;.)
                                         (. vardeclNode.Identifer = varident; .)
