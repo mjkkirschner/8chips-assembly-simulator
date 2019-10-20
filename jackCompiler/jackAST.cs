@@ -51,6 +51,51 @@ namespace jackCompiler.AST
             }
             throw new Exception($"could not find matching operator for token {token} ");
         }
+        public static LetStatementNode GenerateLetStatementAST(string varName, ASTNode rhs)
+        {
+            //let x = 100;
+            var xID = new IdentiferNode(varName);
+            var assign = new BinaryExpressionNode(xID, rhs, Operators.Operator.assign);
+            var letStatement = new LetStatementNode(assign);
+
+            return letStatement;
+        }
+
+        public static DoStatementNode GenerateDoStatementAST(string targetName, string functionName, IEnumerable<ASTNode> argumentList)
+        {
+            var doStatementNode = new DoStatementNode(new SubroutineCallNode(
+                targetName != null ? new IdentiferNode(targetName) : null, new IdentiferNode(functionName), argumentList));
+
+            return doStatementNode;
+        }
+
+        public static StatementNode GenerateIndexedLetStatement(string varName, int index, ASTNode rhs)
+        {
+            //let x[0] = 100;
+            var xID = new IndexedIdentifierNode(varName, new IntNode(index));
+            var assign = new BinaryExpressionNode(xID, rhs, Operators.Operator.assign);
+            var letStatment = new LetStatementNode(assign);
+
+            return letStatment;
+        }
+
+        public static VarDeclNode GenerateVarDeclaration(string name, JackType type = null)
+        {
+            return new VarDeclNode(new IdentiferNode(name, type));
+        }
+
+        public static SubroutineDeclNode GenerateFunctionDeclaration(string functionName, IEnumerable<string> names, IEnumerable<JackType> types, JackType returnType, SubroutineBodyNode functionBody)
+        {
+            /*{
+                function int add(x int, y int){
+                    return x + y
+                }
+            */
+            var parameters = names.Select((x, index) => { return new VarDeclNode(new IdentiferNode(x, types.ElementAt(index))); });
+            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode(functionName), returnType, parameters, functionBody);
+
+            return function;
+        }
 
     }
 
@@ -133,11 +178,14 @@ namespace jackCompiler.AST
             Name = name;
         }
 
-        public override string ToString(){
+        public override string ToString()
+        {
             return Name;
         }
     }
 
+
+    //TODO implement equality comparison?
     public abstract class ASTNode
     {
         public Guid ID { get; set; }
@@ -215,6 +263,11 @@ namespace jackCompiler.AST
 
         }
 
+        public override string ToString()
+        {
+            return $"{(IsStatic == true ? "static" : "field")} {base.Identifer}";
+        }
+
     }
 
     public class VarDeclNode : ASTNode
@@ -224,11 +277,11 @@ namespace jackCompiler.AST
         public VarDeclNode(IdentiferNode identifer)
         {
             this.Identifer = identifer;
-            // TODO should we have a typedIdentifierNode?
+            /*// TODO should we have a typedIdentifierNode?
             if (this.Identifer.Type == null)
             {
                 throw new Exception("you cannot declare a variable without a type.");
-            }
+            }*/
         }
         public VarDeclNode()
         {
@@ -242,7 +295,7 @@ namespace jackCompiler.AST
 
         public override string ToString()
         {
-            return $"var {Identifer}";
+            return $"var {Identifer};";
         }
 
     }
@@ -307,6 +360,53 @@ namespace jackCompiler.AST
         {
             return this.Variables.AsEnumerable<ASTNode>().Concat(this.Statements);
         }
+    }
+
+    public class SubroutineCallNode : ASTNode
+    {
+
+        /// <summary>
+        /// what to call the function on
+        /// </summary>
+        /// <value></value>
+        public IdentiferNode Target { get; set; }
+        /// <summary>
+        /// name of the function to call
+        /// </summary>
+        /// <value></value>
+        public IdentiferNode FunctionName { get; set; }
+        /// <summary>
+        /// List of arguments
+        /// </summary>
+        /// <value></value>
+
+        /// <summary>
+        /// List of expressions we pass as arguments to the function.
+        /// </summary>
+        /// <value></value>
+        public IEnumerable<ASTNode> ArgumentList { get; set; }
+
+        public SubroutineCallNode(IdentiferNode target,
+         IdentiferNode functionName,
+          IEnumerable<ASTNode> argumentList)
+        {
+            Target = target;
+            FunctionName = functionName;
+            ArgumentList = argumentList;
+
+        }
+
+        public SubroutineCallNode()
+        {
+
+        }
+
+        public override string ToString()
+        {
+            var targetString = Target != null ? "." : string.Empty;
+            return $"{Target}{targetString }{FunctionName }({String.Join(",", ArgumentList.ToList().Select(x => x.ToString()))})";
+        }
+
     }
 
     public class StatementNode : ASTNode
@@ -380,7 +480,7 @@ namespace jackCompiler.AST
 
         public override string ToString()
         {
-            return $"let {this.Assignment}";
+            return $"let {this.Assignment};";
         }
     }
 
@@ -395,8 +495,29 @@ namespace jackCompiler.AST
 
         public override string ToString()
         {
-            return $"return {this.Expression}";
+            return $"return {this.Expression};";
         }
+    }
+
+    public class DoStatementNode : StatementNode
+    {
+        public SubroutineCallNode FunctionCall { get; set; }
+
+        public DoStatementNode(SubroutineCallNode functionCall)
+        {
+            FunctionCall = functionCall;
+        }
+        public DoStatementNode()
+        {
+
+        }
+
+        public override string ToString()
+        {
+            return $"do {FunctionCall};";
+        }
+
+
     }
 
     public class ClassDeclNode : ASTNode

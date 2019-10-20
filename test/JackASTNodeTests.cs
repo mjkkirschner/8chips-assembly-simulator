@@ -6,86 +6,41 @@ using System.Linq;
 
 namespace Tests.Jack
 {
-    public class ASTNodeTests
+    public class ASTTestUtils
     {
-        [Test]
-        public void SimpleLetStatementAsAST_HasCorrectStringOutput()
-        {
-            //let x = 100;
-            var xID = new IdentiferNode("x");
-            var const100 = new IntNode(100);
-            var assign = new BinaryExpressionNode(xID, const100, Operators.Operator.assign);
-            var letStatment = new LetStatementNode(assign);
 
-            Console.WriteLine(letStatment);
-        }
+
+
 
         [Test]
-        public void IndexedLetStatementAsAST_HasCorrectStringOutput()
-        {
-            //let x[0] = 100;
-            var xID = new IndexedIdentifierNode("x", new IntNode(0));
-            var const100 = new IntNode(100);
-            var assign = new BinaryExpressionNode(xID, const100, Operators.Operator.assign);
-            var letStatment = new LetStatementNode(assign);
-
-            Console.WriteLine(letStatment);
-        }
-
-        [Test]
-        public void SimpleClassDeclaration_StringOut()
+        public void FunctionCall()
         {
             /*class Main{
                 function void main(){
-
+               do coolfunc(3);
+                }
+                function int coolfunc(int x){
+                return x;
                 }
             }
             */
+            var const3 = new IntNode(3);
 
-            var funcBody = new SubroutineBodyNode(new List<VarDeclNode>(), new List<StatementNode>());
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), new JackType("void"), new List<VarDeclNode>(), funcBody);
-            var classnode = new ClassDeclNode("Main", new List<ClassVarDeclNode>(), new List<SubroutineDeclNode>() { function });
 
-            Console.WriteLine(classnode);
-        }
+            var returnStatement = new ReturnStatementNode(new IdentiferNode("x"));
+            var mainBody = new SubroutineBodyNode(
+                new List<VarDeclNode>(),
+             new List<StatementNode>() { new DoStatementNode(new SubroutineCallNode(null, new IdentiferNode("coolfunc"), new List<ASTNode>() { const3 })) });
+            var mainDecl = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), new JackType("void"), new List<VarDeclNode>(), mainBody);
 
-        [Test]
-        public void FunctionWithParams_StringOut()
-        {
-            /*{
-                function int add(x int, y int){
-                    return x + y
-                }
-            */
+            var coolfuncBody = new SubroutineBodyNode(
+                new List<VarDeclNode>(),
+             new List<StatementNode>() { returnStatement });
 
-            var xdecl = new VarDeclNode(new IdentiferNode("x", new JackType("Int32")));
-            var ydecl = new VarDeclNode(new IdentiferNode("y", new JackType("Int32")));
-            var funcBody = new SubroutineBodyNode(new List<VarDeclNode>() { },
-            new List<StatementNode>() { new ReturnStatementNode(new BinaryExpressionNode(new IdentiferNode("x"), new IdentiferNode("y"), Operators.Operator.add)) });
+            var coolFuncDecl = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("coolfunc"),
+             new JackType("int"), new List<VarDeclNode>() { new VarDeclNode(new IdentiferNode("x", new JackType("int"))) }, coolfuncBody);
 
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("add"), new JackType("Int32"), new List<VarDeclNode>() { xdecl, ydecl }, funcBody);
-
-            Console.WriteLine(function);
-        }
-
-        [Test]
-        public void ClassDeclarationWithFunction_StringOut()
-        {
-            /*class Main{
-                function void main(){
-                var x int
-                let x = 100
-                }
-            }
-            */
-            var xID = new IdentiferNode("x");
-            var const100 = new IntNode(100);
-            var assign = new BinaryExpressionNode(xID, const100, Operators.Operator.assign);
-            var letStatment = new LetStatementNode(assign);
-
-            var funcBody = new SubroutineBodyNode(new List<VarDeclNode>() { new VarDeclNode(new IdentiferNode("x", new JackType("Int32"))) }, new List<StatementNode>() { letStatment });
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode("main"), new JackType("void"), new List<VarDeclNode>(), funcBody);
-            var classnode = new ClassDeclNode("Main", new List<ClassVarDeclNode>(), new List<SubroutineDeclNode>() { function });
+            var classnode = new ClassDeclNode("Main", new List<ClassVarDeclNode>(), new List<SubroutineDeclNode>() { coolFuncDecl, mainDecl });
 
             Console.WriteLine(classnode);
         }

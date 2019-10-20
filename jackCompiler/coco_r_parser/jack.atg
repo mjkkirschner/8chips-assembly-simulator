@@ -10,7 +10,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 
 CHARACTERS
 identStart = '_' + 'a'..'z' + 'A'..'Z'.
-identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9' +'.'.
+identPart = '_' + 'a'..'z' + 'A'..'Z' + '0'..'9'.
 digit = '0'..'9'.
 anyButDoubleQuote = ANY - '\"' - '\\'.
 anyButQuote = ANY - '\''.
@@ -52,6 +52,7 @@ kw_method = "method".
 kw_function = "function".
 kw_class = "class".
 kw_let = "let".
+kw_do = "do".
 kw_return = "return".
 
 /* 
@@ -170,16 +171,43 @@ SubRoutineBody<out bodyNode>
 /*------------------------------------------------------------------------*/
 ParameterList<.out List<jackCompiler.AST.VarDeclNode> varlist.> 
 =                            (. varlist =  new List<jackCompiler.AST.VarDeclNode>(); .)
+                              (.jackCompiler.AST.JackType varType;.)
+                              (. jackCompiler.AST.IdentiferNode typeIdent;.)
 [
-{
+[
 ident
-                                 (.jackCompiler.AST.JackType varType;.)
-                                 (. jackCompiler.AST.IdentiferNode typeIdent;.)
+                                 
+                                 
+                                 (.varType = new jackCompiler.AST.JackType(t.val); .)
+Identifer<out typeIdent>         (.typeIdent.Type = varType;.)
+                                 (. varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); .) 
+]
+{
+","
+ident
+                               
                                  (.varType = new jackCompiler.AST.JackType(t.val); .)
 Identifer<out typeIdent>         (.typeIdent.Type = varType;.)
                                  (. varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); .) 
 }
 ].
+/*------------------------------------------------------------------------*/
+ExpressionList<.out List<jackCompiler.AST.ASTNode> expressionList.> 
+=                            (. expressionList =  new List<jackCompiler.AST.ASTNode>(); .)
+                              (. jackCompiler.AST.ASTNode expressionNode;.)
+[
+[
+                                     
+Expression<out expressionNode>       
+                                 (. expressionList.Add(expressionNode); .) 
+]
+{
+","
+Expression<out expressionNode>       
+                                 (. expressionList.Add(expressionNode); .) 
+}
+].
+
 
 /*------------------------------------------------------------------------*/
 SubroutineDeclarationList<.out List<jackCompiler.AST.SubroutineDeclNode> varlist.>
@@ -214,9 +242,39 @@ SubRoutineBody<out jackCompiler.AST.SubroutineBodyNode bodyNode>
 
 
 /*------------------------------------------------------------------------*/
-//SubroutineCall<out>
+SubroutineCall<out jackCompiler.AST.SubroutineCallNode subcallNode>
+=                                                 (.jackCompiler.AST.IdentiferNode targetName = null;.)
+                                                  (.jackCompiler.AST.IdentiferNode subName;.)
+                                                  (.List<jackCompiler.AST.ASTNode> arguments;.)
+                                                  (.subcallNode =null;.)
+(
+(
+ident //subname
+                                                  (.subName = new jackCompiler.AST.IdentiferNode(t.val);.)
+"("                                                
+ExpressionList <.out arguments.>
+")"
+                                                  (.subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);.)
+)
+|
+(
+     (
+     ident //classname
+     |                                            
+     ident //varname               
+                                                (.targetName = new jackCompiler.AST.IdentiferNode(t.val);.)
+     )
+     "."
+     ident //subname
+                                                  (.subName = new jackCompiler.AST.IdentiferNode(t.val);.)
+     "("                                     
+     ExpressionList <.out arguments.>
+     ")"
+                                                  (.subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);.)
+)
 
 
+).
 
 /*------------------------------------------------------------------------*/
 VarDeclaration <out jackCompiler.AST.VarDeclNode vardeclNode>
@@ -236,6 +294,8 @@ Statement<out jackCompiler.AST.StatementNode statementNode>
 LetStatement <out statementNode>
 |
 ReturnStatement<out statementNode>
+|
+DoStatement<out statementNode>
 )
 .
 
@@ -253,6 +313,16 @@ assign                                  (.jackCompiler.AST.ASTNode expressionNod
 Expression<out expressionNode>
                                         (.var assignmentExpression = new jackCompiler.AST.BinaryExpressionNode(identNode,expressionNode,jackCompiler.AST.Operators.Operator.assign);.)
                                         (.letnode = new jackCompiler.AST.LetStatementNode(assignmentExpression);.)
+';'.
+/*------------------------------------------------------------------------*/
+//TODO not done!
+DoStatement <out jackCompiler.AST.StatementNode doNode>
+=                                       (.jackCompiler.AST.SubroutineCallNode subcallNode = null;.)
+kw_do                
+
+SubroutineCall<out subcallNode>               
+                                       
+                                        (.doNode = new jackCompiler.AST.DoStatementNode(subcallNode); .)
 ';'.
 /*------------------------------------------------------------------------*/
 ReturnStatement <out jackCompiler.AST.StatementNode returnnode>
@@ -286,7 +356,7 @@ Term<out jackCompiler.AST.ASTNode termNode>
                     (.jackCompiler.AST.ASTNode keywordNode = null;.)
                     (.jackCompiler.AST.IdentiferNode identNode = null;.)   
                     (.jackCompiler.AST.IdentiferNode identIndexNode = null;.)
-                    (.jackCompiler.AST.ASTNode subcallNode = null;.)   
+                    (.jackCompiler.AST.SubroutineCallNode subcallNode = null;.)   
                     (.jackCompiler.AST.ASTNode expressionNode = null;.)
                     (.jackCompiler.AST.Operators.UnaryOperator opNode = 0;.)
                     (.jackCompiler.AST.ASTNode unaryTermNode = null;.)
@@ -304,7 +374,7 @@ Identifer<out identNode>  (.termNode = identNode; .)
 |                         
 IndexedIdentifier<out identIndexNode>  (.termNode = identIndexNode; .)
 |                        
-//SubroutineCall<out subcallNode>  (.termNode = subcallNode; .)
+SubroutineCall<out subcallNode>  (.termNode = subcallNode; .)
 |                         
 ('('
 Expression<out expressionNode> (.termNode = expressionNode; .)
