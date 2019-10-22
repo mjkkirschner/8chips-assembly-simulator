@@ -229,8 +229,8 @@ public class UTF8Buffer: Buffer {
 public class Scanner {
 	const char EOL = '\n';
 	const int eofSym = 0; /* pdt */
-	const int maxT = 38;
-	const int noSym = 38;
+	const int maxT = 41;
+	const int noSym = 41;
 
 
 	public Buffer buffer; // scanner buffer
@@ -339,6 +339,52 @@ public class Scanner {
 
 
 
+	bool Comment0() {
+		int level = 1, pos0 = pos, line0 = line, col0 = col, charPos0 = charPos;
+		NextCh();
+		if (ch == '/') {
+			NextCh();
+			for(;;) {
+				if (ch == 10) {
+					level--;
+					if (level == 0) { oldEols = line - line0; NextCh(); return true; }
+					NextCh();
+				} else if (ch == Buffer.EOF) return false;
+				else NextCh();
+			}
+		} else {
+			buffer.Pos = pos0; NextCh(); line = line0; col = col0; charPos = charPos0;
+		}
+		return false;
+	}
+
+	bool Comment1() {
+		int level = 1, pos0 = pos, line0 = line, col0 = col, charPos0 = charPos;
+		NextCh();
+		if (ch == '*') {
+			NextCh();
+			for(;;) {
+				if (ch == '*') {
+					NextCh();
+					if (ch == '/') {
+						level--;
+						if (level == 0) { oldEols = line - line0; NextCh(); return true; }
+						NextCh();
+					}
+				} else if (ch == '/') {
+					NextCh();
+					if (ch == '*') {
+						level++; NextCh();
+					}
+				} else if (ch == Buffer.EOF) return false;
+				else NextCh();
+			}
+		} else {
+			buffer.Pos = pos0; NextCh(); line = line0; col = col0; charPos = charPos0;
+		}
+		return false;
+	}
+
 
 	void CheckLiteral() {
 		switch (t.val) {
@@ -355,7 +401,10 @@ public class Scanner {
 			case "let": t.kind = 25; break;
 			case "do": t.kind = 26; break;
 			case "return": t.kind = 27; break;
-			case "var": t.kind = 37; break;
+			case "if": t.kind = 28; break;
+			case "else": t.kind = 29; break;
+			case "while": t.kind = 30; break;
+			case "var": t.kind = 40; break;
 			default: break;
 		}
 	}
@@ -364,7 +413,7 @@ public class Scanner {
 		while (ch == ' ' ||
 			ch >= 9 && ch <= 10 || ch == 13
 		) NextCh();
-
+		if (ch == '/' && Comment0() ||ch == '/' && Comment1()) return NextToken();
 		int recKind = noSym;
 		int recEnd = pos;
 		t = new Token();
@@ -424,23 +473,23 @@ public class Scanner {
 				if (ch == '=') {AddCh(); goto case 9;}
 				else {t.kind = 10; break;}
 			case 17:
-				{t.kind = 28; break;}
-			case 18:
-				{t.kind = 29; break;}
-			case 19:
-				{t.kind = 30; break;}
-			case 20:
 				{t.kind = 31; break;}
-			case 21:
+			case 18:
 				{t.kind = 32; break;}
-			case 22:
+			case 19:
 				{t.kind = 33; break;}
-			case 23:
+			case 20:
 				{t.kind = 34; break;}
-			case 24:
+			case 21:
 				{t.kind = 35; break;}
-			case 25:
+			case 22:
 				{t.kind = 36; break;}
+			case 23:
+				{t.kind = 37; break;}
+			case 24:
+				{t.kind = 38; break;}
+			case 25:
+				{t.kind = 39; break;}
 
 		}
 		t.val = new String(tval, 0, tlen);

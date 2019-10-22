@@ -30,6 +30,8 @@ using System.Collections.Generic;
 
 
 
+
+
 using System;
 
 
@@ -63,7 +65,10 @@ public class Parser {
 	public const int _kw_let = 25;
 	public const int _kw_do = 26;
 	public const int _kw_return = 27;
-	public const int maxT = 38;
+	public const int _kw_if = 28;
+	public const int _kw_else = 29;
+	public const int _kw_while = 30;
+	public const int maxT = 41;
 
 	const bool T = true;
 	const bool x = false;
@@ -78,6 +83,16 @@ public class Parser {
 
 public jackCompiler.AST.ASTNode root { get; set; }
 
+public bool IsSubCall(){
+     Token next = scanner.Peek();
+     return (la.kind == _ident && next.val == "(") || 
+     (la.kind == _ident && next.val == ".");
+}
+
+public bool IsIndexedIdent(){
+     Token next = scanner.Peek();
+     return (la.kind == _ident && next.val == "[");
+}
 
 
 
@@ -149,14 +164,14 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		Expect(24);
 		Expect(12);
 		currentClass.ClassName = t.val; 
-		Expect(30);
+		Expect(33);
 		List<jackCompiler.AST.ClassVarDeclNode> varnodeList;
 		List<jackCompiler.AST.SubroutineDeclNode> funcnodelist;
 		ClassVarDeclarationList(out varnodeList);
 		currentClass.ClassVariables = varnodeList; 
 		SubroutineDeclarationList(out funcnodelist);
 		currentClass.ClassSubroutines = funcnodelist; 
-		Expect(31);
+		Expect(34);
 	}
 
 	void Identifer(out jackCompiler.AST.IdentiferNode node ) {
@@ -168,9 +183,9 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		jackCompiler.AST.ASTNode indexExpression;
 		Expect(12);
 		var name = t.val; 
-		Expect(28);
+		Expect(31);
 		Expression(out indexExpression);
-		Expect(29);
+		Expect(32);
 		identNode = new jackCompiler.AST.IndexedIdentifierNode(name,indexExpression); 
 	}
 
@@ -215,7 +230,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			Get();
 		} else if (la.kind == 20) {
 			Get();
-		} else SynErr(39);
+		} else SynErr(42);
 		if(t.val == "static"){
 		currentClassVarDec.IsStatic = true;
 		currentClassVarDec.IsField = false;
@@ -231,7 +246,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		Identifer(out varident);
 		varident.Type = classType;
 		currentClassVarDec.Identifer = varident; 
-		Expect(32);
+		Expect(35);
 	}
 
 	void SubroutineDeclaration(out jackCompiler.AST.SubroutineDeclNode currentSubDec ) {
@@ -242,7 +257,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			Get();
 		} else if (la.kind == 23) {
 			Get();
-		} else SynErr(40);
+		} else SynErr(43);
 		if(t.val == "constructor"){
 		currentSubDec.FunctionType = jackCompiler.AST.SubroutineType.constructor;
 		}
@@ -260,12 +275,12 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		typeIdent.Type = returnType;
 		currentSubDec.FunctionName = typeIdent; 
 		currentSubDec.ReturnType = returnType; 
-		Expect(33);
+		Expect(36);
 		List<jackCompiler.AST.VarDeclNode> paramList;
 		ParameterList(out paramList);
 		currentSubDec.ParameterList =  paramList;
 		jackCompiler.AST.SubroutineBodyNode bodyNode;
-		Expect(34);
+		Expect(37);
 		SubRoutineBody(out bodyNode);
 		currentSubDec.FunctionBody = bodyNode;
 	}
@@ -274,7 +289,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		varlist =  new List<jackCompiler.AST.VarDeclNode>(); 
 		jackCompiler.AST.JackType varType;
 		jackCompiler.AST.IdentiferNode typeIdent;
-		if (la.kind == 12 || la.kind == 35) {
+		if (la.kind == 12 || la.kind == 38) {
 			if (la.kind == 12) {
 				Get();
 				varType = new jackCompiler.AST.JackType(t.val); 
@@ -282,7 +297,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 				typeIdent.Type = varType;
 				varlist.Add(new jackCompiler.AST.VarDeclNode(typeIdent)); 
 			}
-			while (la.kind == 35) {
+			while (la.kind == 38) {
 				Get();
 				Expect(12);
 				varType = new jackCompiler.AST.JackType(t.val); 
@@ -297,29 +312,29 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		bodyNode = new jackCompiler.AST.SubroutineBodyNode(); 
 		var varList = new List<jackCompiler.AST.VarDeclNode>(); 
 		var statList = new List<jackCompiler.AST.StatementNode>(); 
-		Expect(30);
-		while (la.kind == 37) {
+		Expect(33);
+		while (la.kind == 40) {
 			VarDeclaration(out jackCompiler.AST.VarDeclNode VarDeclNode);
 			varList.Add(VarDeclNode) ; 
 		}
 		bodyNode.Variables = varList; 
-		while (la.kind == 25 || la.kind == 26 || la.kind == 27) {
+		while (StartOf(2)) {
 			Statement(out jackCompiler.AST.StatementNode statementNode);
 			statList.Add(statementNode) ; 
 		}
 		bodyNode.Statements = statList; 
-		Expect(31);
+		Expect(34);
 	}
 
 	void ExpressionList(out List<jackCompiler.AST.ASTNode> expressionList) {
 		expressionList =  new List<jackCompiler.AST.ASTNode>(); 
 		jackCompiler.AST.ASTNode expressionNode;
-		if (StartOf(2)) {
-			if (StartOf(3)) {
+		if (StartOf(3)) {
+			if (StartOf(4)) {
 				Expression(out expressionNode);
 				expressionList.Add(expressionNode); 
 			}
-			while (la.kind == 35) {
+			while (la.kind == 38) {
 				Get();
 				Expression(out expressionNode);
 				expressionList.Add(expressionNode); 
@@ -328,7 +343,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 	}
 
 	void VarDeclaration(out jackCompiler.AST.VarDeclNode vardeclNode) {
-		Expect(37);
+		Expect(40);
 		vardeclNode = new jackCompiler.AST.VarDeclNode(); 
 		Expect(12);
 		var varType = new jackCompiler.AST.JackType(t.val); 
@@ -336,7 +351,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		Identifer(out varident);
 		varident.Type = varType;
 		vardeclNode.Identifer = varident; 
-		Expect(32);
+		Expect(35);
 	}
 
 	void Statement(out jackCompiler.AST.StatementNode statementNode) {
@@ -347,7 +362,11 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			ReturnStatement(out statementNode);
 		} else if (la.kind == 26) {
 			DoStatement(out statementNode);
-		} else SynErr(41);
+		} else if (la.kind == 30) {
+			whileStatement(out statementNode);
+		} else if (la.kind == 28) {
+			IfStatement(out statementNode);
+		} else SynErr(44);
 	}
 
 	void SubroutineCall(out jackCompiler.AST.SubroutineCallNode subcallNode) {
@@ -357,52 +376,41 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		subcallNode =null;
 		if (la.kind == 12) {
 			Get();
-			subName = new jackCompiler.AST.IdentiferNode(t.val);
-			Expect(33);
-			ExpressionList(out arguments);
-			Expect(34);
-			subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);
-		} else if (la.kind == 12) {
-			if (la.kind == 12) {
-				Get();
-			} else {
-				Get();
-				targetName = new jackCompiler.AST.IdentiferNode(t.val);
-			}
-			Expect(36);
-			Expect(12);
-			subName = new jackCompiler.AST.IdentiferNode(t.val);
-			Expect(33);
-			ExpressionList(out arguments);
-			Expect(34);
-			subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);
-		} else SynErr(42);
+			if(la.val == "."){targetName = new jackCompiler.AST.IdentiferNode(t.val);} 
+			Expect(39);
+		}
+		Expect(12);
+		subName = new jackCompiler.AST.IdentiferNode(t.val);
+		Expect(36);
+		ExpressionList(out arguments);
+		Expect(37);
+		subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);
 	}
 
 	void LetStatement(out jackCompiler.AST.StatementNode letnode) {
 		jackCompiler.AST.IdentiferNode identNode = null;
 		Expect(25);
-		if (la.kind == 12) {
-			Identifer(out identNode);
-		} else if (la.kind == 12) {
+		if (IsIndexedIdent()) {
 			IndexedIdentifier(out identNode);
-		} else SynErr(43);
+		} else if (la.kind == 12) {
+			Identifer(out identNode);
+		} else SynErr(45);
 		Expect(10);
 		jackCompiler.AST.ASTNode expressionNode;
 		Expression(out expressionNode);
 		var assignmentExpression = new jackCompiler.AST.BinaryExpressionNode(identNode,expressionNode,jackCompiler.AST.Operators.Operator.assign);
 		letnode = new jackCompiler.AST.LetStatementNode(assignmentExpression);
-		Expect(32);
+		Expect(35);
 	}
 
 	void ReturnStatement(out jackCompiler.AST.StatementNode returnnode) {
 		jackCompiler.AST.ASTNode expressionNode = null;
 		Expect(27);
-		if (StartOf(3)) {
+		if (StartOf(4)) {
 			Expression(out expressionNode);
 		}
 		returnnode = new jackCompiler.AST.ReturnStatementNode(expressionNode); 
-		Expect(32);
+		Expect(35);
 	}
 
 	void DoStatement(out jackCompiler.AST.StatementNode doNode) {
@@ -410,7 +418,53 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		Expect(26);
 		SubroutineCall(out subcallNode);
 		doNode = new jackCompiler.AST.DoStatementNode(subcallNode); 
-		Expect(32);
+		Expect(35);
+	}
+
+	void whileStatement(out jackCompiler.AST.StatementNode whileNode) {
+		jackCompiler.AST.StatementNode statementNode;
+		jackCompiler.AST.ASTNode expressionNode = null;
+		var statList = new List<jackCompiler.AST.StatementNode>(); 
+		Expect(30);
+		Expect(36);
+		Expression(out expressionNode);
+		Expect(37);
+		Expect(33);
+		while (StartOf(2)) {
+			Statement(out statementNode);
+			statList.Add(statementNode);
+		}
+		Expect(34);
+		whileNode = new jackCompiler.AST.WhileStatementNode(expressionNode,statList); 
+	}
+
+	void IfStatement(out jackCompiler.AST.StatementNode ifnode) {
+		jackCompiler.AST.ASTNode expressionNode = null;
+		jackCompiler.AST.StatementNode statementNode;
+		jackCompiler.AST.StatementNode elseStatementNode;
+		var statList = new List<jackCompiler.AST.StatementNode>(); 
+		List<jackCompiler.AST.StatementNode> elseStatList = null; 
+		Expect(28);
+		Expect(36);
+		Expression(out expressionNode);
+		Expect(37);
+		Expect(33);
+		while (StartOf(2)) {
+			Statement(out statementNode);
+			statList.Add(statementNode);
+		}
+		Expect(34);
+		if (la.kind == 29) {
+			Get();
+			elseStatList = new List<jackCompiler.AST.StatementNode>();
+			Expect(33);
+			while (StartOf(2)) {
+				Statement(out elseStatementNode);
+				elseStatList.Add(elseStatementNode);
+			}
+			Expect(34);
+		}
+		ifnode = new jackCompiler.AST.IfStatementNode(expressionNode,statList,elseStatList); 
 	}
 
 	void Term(out jackCompiler.AST.ASTNode termNode) {
@@ -430,28 +484,28 @@ public jackCompiler.AST.ASTNode root { get; set; }
 		} else if (la.kind == 14) {
 			StringConstant(out stringNode);
 			termNode = stringNode; 
-		} else if (StartOf(4)) {
+		} else if (StartOf(5)) {
 			KeyWordConstant(out keywordNode);
 			termNode = keywordNode; 
-		} else if (la.kind == 12) {
-			Identifer(out identNode);
-			termNode = identNode; 
-		} else if (la.kind == 12) {
+		} else if (IsSubCall()) {
+			SubroutineCall(out subcallNode);
+			termNode = subcallNode; 
+		} else if (IsIndexedIdent()) {
 			IndexedIdentifier(out identIndexNode);
 			termNode = identIndexNode; 
 		} else if (la.kind == 12) {
-			SubroutineCall(out subcallNode);
-			termNode = subcallNode; 
-		} else if (la.kind == 33) {
+			Identifer(out identNode);
+			termNode = identNode; 
+		} else if (la.kind == 36) {
 			Get();
 			Expression(out expressionNode);
 			termNode = expressionNode; 
-			Expect(34);
+			Expect(37);
 		} else if (la.kind == 2 || la.kind == 11) {
 			UnaryOp(out opNode);
 			Term(out unaryTermNode);
 			termNode = new jackCompiler.AST.UnaryExpressionNode(unaryTermNode,opNode);
-		} else SynErr(44);
+		} else SynErr(46);
 	}
 
 	void Op(out jackCompiler.AST.Operators.Operator op) {
@@ -492,7 +546,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			Get();
 			break;
 		}
-		default: SynErr(45); break;
+		default: SynErr(47); break;
 		}
 		op = jackCompiler.AST.ASTBuilder.OperatorFromString(t.val); 
 	}
@@ -516,7 +570,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			Get();
 		} else if (la.kind == 18) {
 			Get();
-		} else SynErr(46);
+		} else SynErr(48);
 		astNode = jackCompiler.AST.ASTBuilder.buildKeyWordNode(t.val);
 	}
 
@@ -525,7 +579,7 @@ public jackCompiler.AST.ASTNode root { get; set; }
 			Get();
 		} else if (la.kind == 11) {
 			Get();
-		} else SynErr(47);
+		} else SynErr(49);
 		op = jackCompiler.AST.ASTBuilder.UnaryOperatorFromString(t.val); 
 	}
 
@@ -541,11 +595,12 @@ public jackCompiler.AST.ASTNode root { get; set; }
 	}
 	
 	static readonly bool[,] set = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,T,T,T, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,T,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,T, x,x,x,x},
-		{x,x,T,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,x,x, x,x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x}
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,T,T,T, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,x,T,x, x,x,x,x, x,x,x,x, x,x,x},
+		{x,x,T,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,T,x, x,x,x},
+		{x,x,T,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x}
 
 	};
 } // end Parser
@@ -587,26 +642,28 @@ public class Errors {
 			case 25: s = "kw_let expected"; break;
 			case 26: s = "kw_do expected"; break;
 			case 27: s = "kw_return expected"; break;
-			case 28: s = "\"[\" expected"; break;
-			case 29: s = "\"]\" expected"; break;
-			case 30: s = "\"{\" expected"; break;
-			case 31: s = "\"}\" expected"; break;
-			case 32: s = "\";\" expected"; break;
-			case 33: s = "\"(\" expected"; break;
-			case 34: s = "\")\" expected"; break;
-			case 35: s = "\",\" expected"; break;
-			case 36: s = "\".\" expected"; break;
-			case 37: s = "\"var\" expected"; break;
-			case 38: s = "??? expected"; break;
-			case 39: s = "invalid ClassVarDeclaration"; break;
-			case 40: s = "invalid SubroutineDeclaration"; break;
-			case 41: s = "invalid Statement"; break;
-			case 42: s = "invalid SubroutineCall"; break;
-			case 43: s = "invalid LetStatement"; break;
-			case 44: s = "invalid Term"; break;
-			case 45: s = "invalid Op"; break;
-			case 46: s = "invalid KeyWordConstant"; break;
-			case 47: s = "invalid UnaryOp"; break;
+			case 28: s = "kw_if expected"; break;
+			case 29: s = "kw_else expected"; break;
+			case 30: s = "kw_while expected"; break;
+			case 31: s = "\"[\" expected"; break;
+			case 32: s = "\"]\" expected"; break;
+			case 33: s = "\"{\" expected"; break;
+			case 34: s = "\"}\" expected"; break;
+			case 35: s = "\";\" expected"; break;
+			case 36: s = "\"(\" expected"; break;
+			case 37: s = "\")\" expected"; break;
+			case 38: s = "\",\" expected"; break;
+			case 39: s = "\".\" expected"; break;
+			case 40: s = "\"var\" expected"; break;
+			case 41: s = "??? expected"; break;
+			case 42: s = "invalid ClassVarDeclaration"; break;
+			case 43: s = "invalid SubroutineDeclaration"; break;
+			case 44: s = "invalid Statement"; break;
+			case 45: s = "invalid LetStatement"; break;
+			case 46: s = "invalid Term"; break;
+			case 47: s = "invalid Op"; break;
+			case 48: s = "invalid KeyWordConstant"; break;
+			case 49: s = "invalid UnaryOp"; break;
 
 			default: s = "error " + n; break;
 		}

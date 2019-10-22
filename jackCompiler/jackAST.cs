@@ -84,7 +84,7 @@ namespace jackCompiler.AST
             return new VarDeclNode(new IdentiferNode(name, type));
         }
 
-        public static SubroutineDeclNode GenerateFunctionDeclaration(string functionName, IEnumerable<string> names, IEnumerable<JackType> types, JackType returnType, SubroutineBodyNode functionBody)
+        public static SubroutineDeclNode GenerateFunctionDeclaration(SubroutineType functionType, string functionName, IEnumerable<string> names, IEnumerable<JackType> types, JackType returnType, SubroutineBodyNode functionBody)
         {
             /*{
                 function int add(x int, y int){
@@ -92,9 +92,14 @@ namespace jackCompiler.AST
                 }
             */
             var parameters = names.Select((x, index) => { return new VarDeclNode(new IdentiferNode(x, types.ElementAt(index))); });
-            var function = new SubroutineDeclNode(SubroutineType.function, new IdentiferNode(functionName), returnType, parameters, functionBody);
+            var function = new SubroutineDeclNode(functionType, new IdentiferNode(functionName), returnType, parameters, functionBody);
 
             return function;
+        }
+
+        public static IfStatementNode generateIfStatement(ASTNode test, IEnumerable<StatementNode> trueSt, IEnumerable<StatementNode> falseSt = null)
+        {
+            return new IfStatementNode(test, trueSt, falseSt);
         }
 
     }
@@ -265,7 +270,7 @@ namespace jackCompiler.AST
 
         public override string ToString()
         {
-            return $"{(IsStatic == true ? "static" : "field")} {base.Identifer}";
+            return $"{(IsStatic == true ? "static" : "field")} {base.Identifer};";
         }
 
     }
@@ -414,7 +419,61 @@ namespace jackCompiler.AST
 
     }
 
+    public class IfStatementNode : StatementNode
+    {
+        public ASTNode TestExpression { get; set; }
+        public IEnumerable<StatementNode> TrueStatements { get; set; }
+        public IEnumerable<StatementNode> ElseStatements { get; set; }
 
+        public IfStatementNode()
+        {
+
+        }
+
+        public IfStatementNode(ASTNode testExpression, IEnumerable<StatementNode> trueStatements, IEnumerable<StatementNode> elseStatements = null)
+        {
+            TestExpression = testExpression;
+            TrueStatements = trueStatements;
+            ElseStatements = elseStatements;
+        }
+
+        public override string ToString()
+        {
+
+            var elseString = "";
+            if (ElseStatements != null)
+            {
+                elseString = $"else {{ {string.Join(Environment.NewLine, ElseStatements.Select(x => x.ToString())) } }}";
+            }
+            return $"if({TestExpression}) {{ {string.Join(Environment.NewLine, TrueStatements.Select(x => x.ToString())) } }} {elseString}";
+        }
+
+    }
+
+    public class WhileStatementNode : StatementNode
+    {
+        public ASTNode TestExpression { get; set; }
+        public IEnumerable<StatementNode> TrueStatements { get; set; }
+
+        public WhileStatementNode()
+        {
+
+        }
+
+        public WhileStatementNode(ASTNode testExpression, IEnumerable<StatementNode> trueStatements)
+        {
+            TestExpression = testExpression;
+            TrueStatements = trueStatements;
+        }
+
+        public override string ToString()
+        {
+
+
+            return $"while({TestExpression}) {{ {string.Join(Environment.NewLine, TrueStatements.Select(x => x.ToString())) } }}";
+        }
+
+    }
 
     public class BinaryExpressionNode : ASTNode
     {

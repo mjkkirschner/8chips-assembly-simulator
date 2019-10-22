@@ -3,10 +3,22 @@ using System.Linq;
 using static jackCompiler.AST.Operators;
 using System.Collections.Generic;
 
+
+
 COMPILER jack
 //(* don't support multiple var defs per line  *)
 public jackCompiler.AST.ASTNode root { get; set; }
 
+public bool IsSubCall(){
+     Token next = scanner.Peek();
+     return (la.kind == _ident && next.val == "(") || 
+     (la.kind == _ident && next.val == ".");
+}
+
+public bool IsIndexedIdent(){
+     Token next = scanner.Peek();
+     return (la.kind == _ident && next.val == "[");
+}
 
 CHARACTERS
 identStart = '_' + 'a'..'z' + 'A'..'Z'.
@@ -54,6 +66,13 @@ kw_class = "class".
 kw_let = "let".
 kw_do = "do".
 kw_return = "return".
+kw_if = "if".
+kw_else = "else".
+kw_while = "while".
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO lf
+
 
 /* 
 classVarDec = classVarType type ident ';'.
@@ -136,7 +155,8 @@ ClassVarDeclaration<out jackCompiler.AST.ClassVarDeclNode currentClassVarDec >
                         currentClassVarDec.IsField = true;
                     }
                                      .)
-ident /*was a type */                (.classType = new jackCompiler.AST.JackType(t.val); .)
+ident /*was a type */                
+                                    (.classType = new jackCompiler.AST.JackType(t.val); .)
                                     (. jackCompiler.AST.IdentiferNode varident;.)
 Identifer<out varident> (. varident.Type = classType;.)
                     (. currentClassVarDec.Identifer = varident; .)
@@ -247,34 +267,23 @@ SubroutineCall<out jackCompiler.AST.SubroutineCallNode subcallNode>
                                                   (.jackCompiler.AST.IdentiferNode subName;.)
                                                   (.List<jackCompiler.AST.ASTNode> arguments;.)
                                                   (.subcallNode =null;.)
-(
-(
-ident //subname
-                                                  (.subName = new jackCompiler.AST.IdentiferNode(t.val);.)
-"("                                                
-ExpressionList <.out arguments.>
-")"
-                                                  (.subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);.)
-)
-|
-(
-     (
-     ident //classname
-     |                                            
-     ident //varname               
-                                                (.targetName = new jackCompiler.AST.IdentiferNode(t.val);.)
-     )
+     
+     [
+          ident //targetName
+                                                   (.if(la.val == "."){targetName = new jackCompiler.AST.IdentiferNode(t.val);} .)
      "."
-     ident //subname
+     ]
+     
+                                               
+     ident //subName
                                                   (.subName = new jackCompiler.AST.IdentiferNode(t.val);.)
+     
      "("                                     
      ExpressionList <.out arguments.>
      ")"
                                                   (.subcallNode = new jackCompiler.AST.SubroutineCallNode(targetName,subName,arguments);.)
-)
 
-
-).
+.
 
 /*------------------------------------------------------------------------*/
 VarDeclaration <out jackCompiler.AST.VarDeclNode vardeclNode>
@@ -296,7 +305,58 @@ LetStatement <out statementNode>
 ReturnStatement<out statementNode>
 |
 DoStatement<out statementNode>
+|
+whileStatement<out statementNode>
+|
+IfStatement<out statementNode>
 )
+.
+
+
+/*------------------------------------------------------------------------*/
+IfStatement <out jackCompiler.AST.StatementNode ifnode>
+=                                        (.jackCompiler.AST.ASTNode expressionNode = null;.)
+                                         (.jackCompiler.AST.StatementNode statementNode;.)
+                                         (.jackCompiler.AST.StatementNode elseStatementNode;.)
+                                         (.var statList = new List<jackCompiler.AST.StatementNode>(); .)
+                                         (.List<jackCompiler.AST.StatementNode> elseStatList = null; .)
+kw_if 
+"("
+Expression<out expressionNode>            
+")"
+"{"
+{
+Statement<out statementNode>               (.statList.Add(statementNode);.)
+}
+"}"
+[
+kw_else                                      
+                                             (.elseStatList = new List<jackCompiler.AST.StatementNode>();.)
+"{"
+{
+Statement<out elseStatementNode>           (.elseStatList.Add(elseStatementNode);.)
+}
+"}"
+]
+                                           (.ifnode = new jackCompiler.AST.IfStatementNode(expressionNode,statList,elseStatList); .)
+.
+
+/*------------------------------------------------------------------------*/
+whileStatement <out jackCompiler.AST.StatementNode whileNode>
+                                         (.jackCompiler.AST.StatementNode statementNode;.)
+=                                        (.jackCompiler.AST.ASTNode expressionNode = null;.)
+                                         (.var statList = new List<jackCompiler.AST.StatementNode>(); .)
+kw_while 
+"("
+Expression<out expressionNode>            
+")"
+"{"
+{
+Statement<out statementNode>               (.statList.Add(statementNode);.)
+}
+"}"
+
+                                           (.whileNode = new jackCompiler.AST.WhileStatementNode(expressionNode,statList); .)
 .
 
 //let x = 100;
@@ -304,10 +364,10 @@ DoStatement<out statementNode>
 LetStatement <out jackCompiler.AST.StatementNode letnode>
 =                                        (.jackCompiler.AST.IdentiferNode identNode = null;.)
 kw_let 
-(                            
-Identifer<out identNode> 
-| 
-IndexedIdentifier<out identNode>
+(    
+IF(IsIndexedIdent()) IndexedIdentifier<out identNode>
+|
+Identifer<out identNode>
 )
 assign                                  (.jackCompiler.AST.ASTNode expressionNode;.)
 Expression<out expressionNode>
@@ -370,11 +430,11 @@ StringConstant<out stringNode>  (.termNode = stringNode; .)
 |                   
 KeyWordConstant<out keywordNode>   (.termNode = keywordNode; .)
 |                      
-Identifer<out identNode>  (.termNode = identNode; .)
+IF (IsSubCall()) SubroutineCall<out subcallNode>  (.termNode = subcallNode; .)
 |                         
-IndexedIdentifier<out identIndexNode>  (.termNode = identIndexNode; .)
+IF (IsIndexedIdent()) IndexedIdentifier<out identIndexNode>  (.termNode = identIndexNode; .)
 |                        
-SubroutineCall<out subcallNode>  (.termNode = subcallNode; .)
+Identifer<out identNode>  (.termNode = identNode; .)
 |                         
 ('('
 Expression<out expressionNode> (.termNode = expressionNode; .)
