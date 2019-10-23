@@ -102,6 +102,11 @@ namespace jackCompiler.AST
             return new IfStatementNode(test, trueSt, falseSt);
         }
 
+        public static WhileStatementNode generateWhileLoopStatement(ASTNode test, IEnumerable<StatementNode> trueStatements)
+        {
+            return new WhileStatementNode(test, trueStatements);
+        }
+
     }
 
 

@@ -3,6 +3,7 @@ using System.IO;
 using System;
 using jackCompiler.AST;
 using System.Collections.Generic;
+using System.Linq;
 namespace Tests.Jack
 {
 
@@ -410,6 +411,71 @@ namespace Tests.Jack
             );
 
             Assert.AreEqual(jackParser.root.ToString(), classRoot.ToString());
+
+        }
+
+
+
+
+
+
+        [Test]
+        public void whileLoops()
+        {
+            var testClassCode = @"
+          /** Starts the game. Handles inputs from the user that control
+     *  the square's movement, direction and size. */
+    method void run() {
+        var char key;
+        var boolean exit;
+
+        let exit = false;
+
+        while (~exit) {
+            // waits for a key to be pressed.
+            while (key == 0) {
+                let key = Keyboard.keyPressed();
+                do moveSquare();
+            }
+        }
+    }";
+            var path = Path.GetTempFileName();
+            File.WriteAllText(path, testClassCode);
+
+            var scanner = new Scanner(path);
+            var jackParser = new Parser(scanner);
+            jackParser.Parse();
+            Console.WriteLine(jackParser.root.ToString());
+
+            //generate an AST to test against.
+
+            var variables = new List<VarDeclNode>() {ASTBuilder.GenerateVarDeclaration("key",new JackType("char")),
+            ASTBuilder.GenerateVarDeclaration("exit",new JackType("boolean")) };
+
+            var statements = new List<StatementNode>(){
+                                ASTBuilder.GenerateLetStatementAST("exit",new BooleanNode(false)),
+                                ASTBuilder.generateWhileLoopStatement(new UnaryExpressionNode(new IdentiferNode("exit"),Operators.UnaryOperator.not),
+                                new List<StatementNode>(){
+                                    ASTBuilder.generateWhileLoopStatement(new BinaryExpressionNode(new IdentiferNode("key"),new IntNode(0),Operators.Operator.equal),
+                                        new List<StatementNode>(){ ASTBuilder.GenerateLetStatementAST("key",new SubroutineCallNode(new IdentiferNode("Keyboard"),new IdentiferNode("keyPressed"),new List<ASTNode>())),
+                                                                   ASTBuilder.GenerateDoStatementAST(null,"moveSquare",new List<ASTNode>())
+                                                                 }
+                                                                        )
+                                                        }
+                                                    )
+                                                    };
+            var runFuncBody = new SubroutineBodyNode(variables, statements);
+
+            var runFuncDecl = ASTBuilder.GenerateFunctionDeclaration(
+            SubroutineType.method,
+            "run",
+            new List<string>(),
+            new List<JackType>(),
+            new JackType("void"),
+            runFuncBody);
+
+
+            Assert.AreEqual((jackParser.root as ClassDeclNode).ClassSubroutines.ElementAt(0).ToString(), runFuncDecl.ToString());
 
         }
 
